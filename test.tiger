@@ -1,0 +1,17 @@
+/* combined example of associativity and precedence */
+program math2
+let
+    static a1: int;
+begin
+    function main() : int
+    begin
+        a1 := 1 - 2 + 3;
+        a1 := 1 / 2 * 3;
+        a1 := 1 / (2 * 3);
+        a1 := 1 + 2 * 3;
+        a1 := 1 - 2 / 3;
+        a1 := (1 - 2) / 3;
+        a1 := 2 + 1 ** 2 ** 3 / 2;
+        return 0;
+    end
+end
