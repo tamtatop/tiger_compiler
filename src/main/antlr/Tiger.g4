@@ -1,5 +1,6 @@
 grammar Tiger;
 
+start: EOF;
 
 ARRAY: 'array';
 BEGIN: 'begin';

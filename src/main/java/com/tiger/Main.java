@@ -1,7 +1,7 @@
 package com.tiger;
 
+import com.tiger.antlr.TigerLexer;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -17,7 +17,7 @@ public class Main {
             return;
         }
         String filename = args[1];
-        String outfilename = args[2];
+        String outFilename = args[2];
 
         System.out.print("Parsing: " + filename);
         CharStream charStream = CharStreams.fromPath(Path.of(filename));
@@ -28,7 +28,7 @@ public class Main {
         Vocabulary vocabulary = tigerLexer.getVocabulary();
         List<? extends Token> allTokens = tigerLexer.getAllTokens();
 
-        BufferedWriter writer = new BufferedWriter(new FileWriter(outfilename));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(outFilename));
 
         for (Token token : allTokens) {
 
@@ -38,8 +38,6 @@ public class Main {
             System.out.println("<" + symbolicName + ", " + "\"" + text + "\"" +">");
         }
         writer.close();
-
-
 
     }
 }
