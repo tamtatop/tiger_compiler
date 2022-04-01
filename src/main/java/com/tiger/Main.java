@@ -3,6 +3,8 @@ package com.tiger;
 import com.tiger.antlr.TigerLexer;
 import jdk.jshell.spi.ExecutionControl;
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
+import com.tiger.antlr.TigerParser;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -49,8 +51,25 @@ public class Main {
 
 
     private static void writeParserOutput(TigerLexer tigerLexer, String parserFilename) throws ExecutionControl.NotImplementedException {
-        // TODO: 01.04.22
-        throw new ExecutionControl.NotImplementedException("parser output is not yet implemented");
+        BufferedWriter writer = null;
+
+        try {
+            writer = new BufferedWriter(new FileWriter(parserFilename));
+
+            CommonTokenStream tokens = new CommonTokenStream(tigerLexer);
+            TigerParser parser = new TigerParser(tokens);
+            ParseTree tree = parser.tiger_program();
+
+            writer.write("digraph G {\n");
+            ParseTreeWalker walker = new ParseTreeWalker();
+            walker.walk(new GraphVizGeneratorListener(writer, tigerLexer.getVocabulary(), parser.getRuleNames()), tree);
+
+            writer.write("}\n");
+            writer.close();
+        } catch (IOException e){
+            System.err.println("Could not create parser output file");
+            System.exit(1);
+        }
     }
 
     public static void main(String[] args) throws ExecutionControl.NotImplementedException {
