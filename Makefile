@@ -1,4 +1,5 @@
 COMPILER_JAR := tigerc.jar 
+JAR_DIR := cs8803_bin
 GRAMMAR := Tiger.g4
 
 
@@ -6,9 +7,10 @@ GRAMMAR := Tiger.g4
 all: 	
 	chmod +x ./gradlew
 	./gradlew jar
-	cp build/libs/tigerc.jar $(COMPILER_JAR)
+	mkdir $(JAR_DIR)
+	cp build/libs/tigerc.jar $(JAR_DIR)/$(COMPILER_JAR)
 
 .PHONY:
 clean:
 	./gradlew clean
-	rm $(COMPILER_JAR)
+	rm -r $(JAR_DIR)
