@@ -22,7 +22,7 @@ storage_class: VAR | STATIC;
 
 id_list: ID | ID COMMA id_list;
 
-optional_init: ASSIGN const | ;
+optional_init: ASSIGN numeric_const | ;
 
 funct: FUNCTION ID OPENPAREN param_list CLOSEPAREN ret_type BEGIN stat_seq END;
 
@@ -50,7 +50,7 @@ optreturn: expr | ;
 
 optprefix: value ASSIGN | ;
 
-expr: const
+expr: numeric_const
 | value
 | <assoc=right> expr POW expr
 | expr mult_div_operator expr
@@ -60,7 +60,7 @@ expr: const
 | expr OR expr
 | OPENPAREN expr CLOSEPAREN;
 
-const: INTLIT | FLOATLIT;
+numeric_const: INTLIT | FLOATLIT;
 
 mult_div_operator: MULT | DIV;
 
