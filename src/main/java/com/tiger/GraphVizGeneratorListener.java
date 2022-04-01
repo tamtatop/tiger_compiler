@@ -12,9 +12,9 @@ import java.io.IOException;
 
 public class GraphVizGeneratorListener implements ParseTreeListener {
 
-    private BufferedWriter writer;
-    private Vocabulary vocabulary;
-    private String[] ruleNames;
+    private final BufferedWriter writer;
+    private final Vocabulary vocabulary;
+    private final String[] ruleNames;
 
     public GraphVizGeneratorListener(BufferedWriter writer, Vocabulary vocabulary, String[] ruleNames) {
         this.writer = writer;

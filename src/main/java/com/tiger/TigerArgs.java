@@ -23,8 +23,9 @@ class TigerArgs {
             }
         }
 
-        if(i!=args.length){
+        if(i!=args.length || this.inputFilename == null){
             System.err.println("Usage: <program> -i filename [-l lexerout] [-p parserout]");
+            System.err.println("You must provide input file");
             System.exit(1);
         }
     }

@@ -1,21 +1,35 @@
 package com.tiger;
 
 import com.tiger.antlr.TigerLexer;
-import jdk.jshell.spi.ExecutionControl;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import com.tiger.antlr.TigerParser;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.List;
 
 
 public class Main {
 
-    public static CharStream charStreamFromFilename(String filename){
+
+    private static Writer writerOrSinkFromFilename(String filename) {
+        Writer f = null;
+        if (filename != null) {
+            try {
+                f = new FileWriter(filename);
+            } catch (IOException e) {
+                System.err.println("Can't create file " + filename);
+                System.exit(1);
+            }
+        } else {
+            f = new NullWriter();
+        }
+
+        return f;
+    }
+
+    public static CharStream charStreamFromFilename(String filename) {
         CharStream charStream = null;
         try {
             charStream = CharStreams.fromPath(Path.of(filename));
@@ -26,73 +40,64 @@ public class Main {
         return charStream;
     }
 
-    public static void writeLexerOutput(TigerLexer tigerLexer, String lexerFilename) {
+    public static void generateTokens(TigerLexer tigerLexer, Writer lexerWriter) {
         Vocabulary vocabulary = tigerLexer.getVocabulary();
         List<? extends Token> allTokens = tigerLexer.getAllTokens();
-        BufferedWriter writer;
 
         try {
-            writer = new BufferedWriter(new FileWriter(lexerFilename));
+            BufferedWriter writer = new BufferedWriter(lexerWriter);
 
             for (Token token : allTokens) {
-                System.out.println(token);
                 String symbolicName = vocabulary.getSymbolicName(token.getType());
                 String text = token.getText();
-                writer.write("<" + symbolicName + ", " + "\"" + text + "\"" +">\n");
-                System.out.println("<" + symbolicName + ", " + "\"" + text + "\"" +">");
+                writer.write("<" + symbolicName + ", " + "\"" + text + "\"" + ">\n");
             }
 
             writer.close();
-        } catch (IOException e){
+        } catch (IOException e) {
             System.err.println("Could not create lexer output file");
             System.exit(1);
         }
     }
 
 
-    private static void writeParserOutput(TigerLexer tigerLexer, String parserFilename) throws ExecutionControl.NotImplementedException {
-        BufferedWriter writer = null;
-
+    private static void generateGraph(TigerLexer tigerLexer, TigerParser parser, Writer parserWriter) {
         try {
-            writer = new BufferedWriter(new FileWriter(parserFilename));
+            BufferedWriter writer = new BufferedWriter(parserWriter);
 
-            CommonTokenStream tokens = new CommonTokenStream(tigerLexer);
-            TigerParser parser = new TigerParser(tokens);
             ParseTree tree = parser.tiger_program();
 
             writer.write("digraph G {\n");
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.walk(new GraphVizGeneratorListener(writer, tigerLexer.getVocabulary(), parser.getRuleNames()), tree);
-
             writer.write("}\n");
             writer.close();
-        } catch (IOException e){
+        } catch (IOException e) {
             System.err.println("Could not create parser output file");
             System.exit(1);
         }
     }
 
-    public static void main(String[] args) throws ExecutionControl.NotImplementedException {
+    public static void main(String[] args) {
         TigerArgs tigerArgs = new TigerArgs(args);
 
-        if(tigerArgs.inputFilename == null) {
-            System.err.println("Input filename not provided");
-            System.exit(1);
-        }
 
         CharStream charStream = charStreamFromFilename(tigerArgs.inputFilename);
+        Writer lexerWriter = writerOrSinkFromFilename(tigerArgs.lexerFilename);
+        Writer parserWriter = writerOrSinkFromFilename(tigerArgs.parserFilename);
 
-        TigerLexer tigerLexer = new TigerLexer(charStream);
+        TigerLexer lexer = new TigerLexer(charStream);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(new FailingErrorListener("Lexer error", 2));
 
-        tigerLexer.removeErrorListeners();
-        tigerLexer.addErrorListener(LexerErrorListener.INSTANCE);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        if(tigerArgs.lexerFilename != null) {
-            writeLexerOutput(tigerLexer, tigerArgs.lexerFilename);
-        }
-        if(tigerArgs.parserFilename != null) {
-            writeParserOutput(tigerLexer, tigerArgs.parserFilename);
-        }
+        TigerParser parser = new TigerParser(tokens);
+        parser.addErrorListener(new FailingErrorListener("Parser error", 3));
+
+        generateTokens(lexer, lexerWriter);
+        generateGraph(lexer, parser, parserWriter);
     }
+
 
 }
