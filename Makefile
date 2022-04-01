@@ -6,10 +6,9 @@ GRAMMAR := Tiger.g4
 all: 	
 	chmod +x ./gradlew
 	./gradlew jar
-	cp build/libs/tiger_compiler.jar $(COMPILER_JAR)
+	cp build/libs/tigerc.jar $(COMPILER_JAR)
 
 .PHONY:
 clean:
 	./gradlew clean
-	rm -r lib
 	rm $(COMPILER_JAR)
