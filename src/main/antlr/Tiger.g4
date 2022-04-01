@@ -1,7 +1,5 @@
 grammar Tiger;
 
-start: EOF;
-
 tiger_program: PROGRAM ID LET declaration_segment BEGIN funct_list END;
 
 declaration_segment: type_declaration_list var_declaration_list;
@@ -52,11 +50,23 @@ optreturn: expr | ;
 
 optprefix: value ASSIGN | ;
 
-expr: const | value | expr binary_operator expr | OPENPAREN expr CLOSEPAREN;
+expr: const
+| value
+| <assoc=right> expr POW expr
+| expr mult_div_operator expr
+| expr plus_minus_operator expr
+| expr comparison_operator expr
+| expr AND expr
+| expr OR expr
+| OPENPAREN expr CLOSEPAREN;
 
 const: INTLIT | FLOATLIT;
 
-binary_operator: PLUS | MINUS | MULT | DIV | POW | EQUAL | NEQUAL | LESS | GREAT | LESSEQ | GREATEQ | AND | OR;
+mult_div_operator: MULT | DIV;
+
+plus_minus_operator: PLUS | MINUS;
+
+comparison_operator: EQUAL | NEQUAL | LESS | GREAT | LESSEQ | GREATEQ;
 
 expr_list: expr expr_list_tail | ;
 
