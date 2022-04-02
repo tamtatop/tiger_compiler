@@ -1,6 +1,6 @@
 grammar Tiger;
 
-tiger_program: PROGRAM ID LET declaration_segment BEGIN funct_list END;
+tiger_program: PROGRAM ID LET declaration_segment BEGIN funct_list END EOF;
 
 declaration_segment: type_declaration_list var_declaration_list;
 

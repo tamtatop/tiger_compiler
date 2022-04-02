@@ -1,17 +1,47 @@
-/* combined example of associativity and precedence */
-program math2
+/* selection sort */
+program sort
 let
-    static a1: int;
 begin
-    function main() : int
+    function main () : int
     begin
-        a1 := 1 - 2 + 3;
-        a1 := 1 / 2 * 3;
-        a1 := 1 / (2 * 3);
-        a1 := 1 + 2 * 3;
-        a1 := 1 - 2 / 3;
-        a1 := (1 - 2) / 3;
-        a1 := 2 + 1 ** 2 ** 3 / 2;
+        let
+            type catList = array [8] of int ;
+            var cats : catList ;
+            var index : int ;
+            var lowestIndex : int ;
+            var subIndex : int ;
+            var temp : int ;
+            var size : int ;
+            var x : int ;
+            var smallest : int ;
+            var first : int ;
+        begin
+            cats [0] := 7;
+            cats [1] := 2;
+            cats [2] := 10;
+            cats [3] := 20;
+            cats [4] := 5;
+            cats [5] := 6;
+            cats [6] := 44;
+            cats [7] := 33;
+            size := 8;
+            for index := 0 to size - 1 do
+                lowestIndex := index ;
+                for subIndex := ( index + 1) to ( size - 1) do
+                    if ( cats [ subIndex ] < cats [ lowestIndex ]) then
+                        lowestIndex := subIndex ;
+                    endif ;
+                enddo ;
+                /* swap minimum to front of sub array */
+                first := cats [ index ];
+                smallest := cats [ lowestIndex ];
+                cats [ index ] := smallest ;
+                cats [ lowestIndex ] := first ;
+            enddo ;
+            for index := 0 to size - 1 do
+                printi ( cats [ index ]);
+            enddo ;
+        end
         return 0;
     end
 end

@@ -96,6 +96,7 @@ public class Main {
         parser.addErrorListener(new FailingErrorListener("Parser error", 3));
 
         generateTokens(lexer, lexerWriter);
+        lexer.reset();
         generateGraph(lexer, parser, parserWriter);
     }
 
