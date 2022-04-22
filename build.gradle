@@ -22,7 +22,7 @@ compileJava.dependsOn generateGrammarSource
 
 sourceSets {
     main {
-        java.srcDir 'generated-src/antlr/main/'
+        java.srcDir 'build/generated-src/antlr/main/'
         java.srcDir 'src/main/java/'
     }
 }
@@ -30,7 +30,7 @@ sourceSets {
 idea {
     module {
         settings {
-            packagePrefix["generated-src/antlr/main/"] = "com.tiger.antlr"
+            packagePrefix["build/generated-src/antlr/main/"] = "com.tiger.antlr"
             packagePrefix["src/main/java/"] = ""
         }
     }
