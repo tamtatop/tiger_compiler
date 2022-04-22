@@ -9,7 +9,7 @@ import java.io.Writer;
 import java.nio.file.Path;
 
 public class IOUtils {
-    static Writer writerOrSinkFromFilename(String filename) {
+    public static Writer writerOrSinkFromFilename(String filename) {
         Writer f = null;
         if (filename != null) {
             try {

@@ -24,12 +24,12 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
 
     @Override
     public Void visitDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
-        System.out.println("visiting declarationss");
+        System.out.println("visiting declarations");
         return visitChildren(ctx);
     }
 
     public void visitRootDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
-        System.out.println("visiting root declarationss");
+        System.out.println("visiting root declarations");
         visitChildren(ctx);
     }
 

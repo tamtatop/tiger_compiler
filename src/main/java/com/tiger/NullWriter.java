@@ -5,17 +5,17 @@ import java.io.Writer;
 
 public class NullWriter extends Writer {
     @Override
-    public void write(char[] chars, int i, int i1) throws IOException {
+    public void write(char[] chars, int i, int i1) {
 
     }
 
     @Override
-    public void flush() throws IOException {
+    public void flush() {
 
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 }

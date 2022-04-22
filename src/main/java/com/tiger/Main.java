@@ -59,6 +59,8 @@ public class Main {
         CharStream charStream = IOUtils.charStreamFromFilename(tigerArgs.inputFilename);
         Writer lexerWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.lexerFilename);
         Writer parserWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.parserFilename);
+        Writer symbolTableWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.symbolTableFilename);
+        Writer irWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.irFilename);
 
         TigerLexer lexer = new TigerLexer(charStream);
         lexer.removeErrorListeners();
