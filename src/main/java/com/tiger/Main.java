@@ -1,45 +1,18 @@
 package com.tiger;
 
-import com.tiger.antlr.TigerBaseVisitor;
 import com.tiger.antlr.TigerLexer;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
 import com.tiger.antlr.TigerParser;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-import java.io.*;
-import java.nio.file.Path;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.List;
 
 
 public class Main {
-
-
-    private static Writer writerOrSinkFromFilename(String filename) {
-        Writer f = null;
-        if (filename != null) {
-            try {
-                f = new FileWriter(filename);
-            } catch (IOException e) {
-                System.err.println("Can't create file " + filename);
-                System.exit(1);
-            }
-        } else {
-            f = new NullWriter();
-        }
-
-        return f;
-    }
-
-    public static CharStream charStreamFromFilename(String filename) {
-        CharStream charStream = null;
-        try {
-            charStream = CharStreams.fromPath(Path.of(filename));
-        } catch (IOException e) {
-            System.err.println("Input file does not exist");
-            System.exit(1);
-        }
-        return charStream;
-    }
 
     public static void generateTokens(TigerLexer tigerLexer, Writer lexerWriter) {
         Vocabulary vocabulary = tigerLexer.getVocabulary();
@@ -73,9 +46,6 @@ public class Main {
             walker.walk(new GraphVizGeneratorListener(writer, tigerLexer.getVocabulary(), parser.getRuleNames()), tree);
             writer.write("}\n");
             writer.close();
-
-            SemanticVisitor semanticVisitor = new SemanticVisitor();
-            semanticVisitor.visit(tree);
         } catch (IOException e) {
             System.err.println("Could not create parser output file");
             System.exit(1);
@@ -86,9 +56,9 @@ public class Main {
         TigerArgs tigerArgs = new TigerArgs(args);
 
 
-        CharStream charStream = charStreamFromFilename(tigerArgs.inputFilename);
-        Writer lexerWriter = writerOrSinkFromFilename(tigerArgs.lexerFilename);
-        Writer parserWriter = writerOrSinkFromFilename(tigerArgs.parserFilename);
+        CharStream charStream = IOUtils.charStreamFromFilename(tigerArgs.inputFilename);
+        Writer lexerWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.lexerFilename);
+        Writer parserWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.parserFilename);
 
         TigerLexer lexer = new TigerLexer(charStream);
         lexer.removeErrorListeners();
@@ -102,6 +72,13 @@ public class Main {
         generateTokens(lexer, lexerWriter);
         lexer.reset();
         generateGraph(lexer, parser, parserWriter);
+
+        // Experiments
+        lexer.reset();
+        parser.reset();
+        ParseTree tree = parser.tiger_program();
+        SemanticVisitor semanticVisitor = new SemanticVisitor();
+        semanticVisitor.visit(tree);
     }
 
 
