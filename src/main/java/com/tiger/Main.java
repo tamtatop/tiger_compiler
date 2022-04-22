@@ -1,5 +1,6 @@
 package com.tiger;
 
+import com.tiger.antlr.TigerBaseVisitor;
 import com.tiger.antlr.TigerLexer;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
@@ -72,6 +73,9 @@ public class Main {
             walker.walk(new GraphVizGeneratorListener(writer, tigerLexer.getVocabulary(), parser.getRuleNames()), tree);
             writer.write("}\n");
             writer.close();
+
+            SemanticVisitor semanticVisitor = new SemanticVisitor();
+            semanticVisitor.visit(tree);
         } catch (IOException e) {
             System.err.println("Could not create parser output file");
             System.exit(1);

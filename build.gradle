@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'antlr'
     id 'idea'
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.4"
 }
 
 repositories {
@@ -20,21 +21,28 @@ generateGrammarSource {
 compileJava.dependsOn generateGrammarSource
 
 sourceSets {
-    generated {
+    main {
         java.srcDir 'generated-src/antlr/main/'
+        java.srcDir 'src/main/java/'
     }
 }
-compileJava.source sourceSets.generated.java, sourceSets.main.java
+
+idea {
+    module {
+        settings {
+            packagePrefix["generated-src/antlr/main/"] = "com.tiger.antlr"
+            packagePrefix["src/main/java/"] = ""
+        }
+    }
+}
+
+
+compileJava.source sourceSets.main.java
 
 clean{
     delete "generated-src"
 }
 
-idea {
-    module {
-        sourceDirs += file("generated-src/antlr/main/")
-    }
-}
 
 test {
     useJUnitPlatform()
