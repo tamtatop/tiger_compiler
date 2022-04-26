@@ -6,9 +6,6 @@ import com.tiger.antlr.TigerParser;
 import java.io.Writer;
 import java.util.*;
 
-interface Type {
-    String toString();
-}
 
 interface Symbol {
     String getName();
