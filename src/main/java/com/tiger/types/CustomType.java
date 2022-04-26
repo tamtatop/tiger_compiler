@@ -1,7 +1,11 @@
 package com.tiger.types;
 
-class CustomType implements Type {
+public class CustomType implements Type {
     String typeId;
+
+    public CustomType(String typeId) {
+        this.typeId = typeId;
+    }
 
     @Override
     public TypeKind getKind() {
@@ -15,6 +19,6 @@ class CustomType implements Type {
 
     @Override
     public String format() {
-        return "int";
+        return typeId;
     }
 }

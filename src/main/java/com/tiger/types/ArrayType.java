@@ -1,8 +1,15 @@
 package com.tiger.types;
 
-class ArrayType implements Type {
-    int count;
+public class ArrayType implements Type {
+    int size;
     Type elementType;
+
+    public ArrayType(int size, Type elementType) {
+        assert size > 0;
+        assert elementType.getKind() == TypeKind.FLOAT || elementType.getKind() == TypeKind.INT;
+        this.size = size;
+        this.elementType = elementType;
+    }
 
     @Override
     public TypeKind getKind() {
@@ -11,11 +18,11 @@ class ArrayType implements Type {
 
     @Override
     public boolean sameType(Type type) {
-        return type.getKind() == getKind() && ((ArrayType)type).count == count && ((ArrayType)type).elementType == elementType;
+        return type.getKind() == getKind() && ((ArrayType)type).size == size && ((ArrayType)type).elementType == elementType;
     }
 
     @Override
     public String format() {
-        return "int";
+        return String.format("array [%d] of %s", size, elementType.format());
     }
 }

@@ -4,7 +4,7 @@ import com.tiger.types.Type;
 
 import java.util.List;
 
-class FunctionSymbol implements Symbol {
+public class FunctionSymbol implements Symbol {
     String name;
     List<Symbol> params;
     Type returnType;

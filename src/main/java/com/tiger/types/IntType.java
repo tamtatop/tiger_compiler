@@ -1,6 +1,6 @@
 package com.tiger.types;
 
-class IntType implements Type {
+public class IntType implements Type {
     @Override
     public TypeKind getKind() {
         return TypeKind.INT;
