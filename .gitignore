@@ -100,3 +100,6 @@ fabric.properties
 tigerc.jar
 .idea/misc.xml
 example.png
+test.st
+test.gv
+test.tokens

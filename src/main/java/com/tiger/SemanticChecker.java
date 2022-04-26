@@ -124,6 +124,7 @@ package com.tiger;
 import com.tiger.antlr.TigerParser;
 import com.tiger.symbols.Symbol;
 import com.tiger.symbols.SymbolKind;
+import com.tiger.symbols.TypeSymbol;
 import com.tiger.symbols.VariableSymbol;
 import com.tiger.types.*;
 import org.antlr.v4.runtime.Token;
@@ -150,8 +151,8 @@ public class SemanticChecker {
     }
 
     public void visitDeclarationSegment(TigerParser.Declaration_segmentContext ctx, boolean isRoot) throws SemanticException {
+        visitTypeDeclarationList(ctx.type_declaration_list());
         visitVarDeclarationList(ctx.var_declaration_list(), isRoot);
-
     }
 
     public void visitVarDeclarationList(TigerParser.Var_declaration_listContext ctx, boolean isRoot) throws SemanticException {
@@ -183,6 +184,18 @@ public class SemanticChecker {
             symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
             idCtx = idCtx.id_list();
         }
+    }
+
+    public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) {
+        if(ctx.type_declaration() == null){
+            return;
+        }
+        visitTypeDeclaration(ctx.type_declaration());
+        visitTypeDeclarationList(ctx.type_declaration_list());
+    }
+
+    public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) {
+        symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
     }
 
     public Type parseBaseType(TigerParser.Base_typeContext ctx) {

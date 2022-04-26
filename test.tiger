@@ -1,8 +1,11 @@
 /* selection sort */
 program sort
 let
-static index : int ;
+    type catList = array [8] of int ;
+    static index : int ;
+    static wowList : catList ;
     static lowestIndex : int ;
+    static wowo : array [8] of float ;
     static subIndex : float ;
 begin
     function main () : int

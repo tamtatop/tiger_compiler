@@ -7,7 +7,7 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.Stack;
 
-class SymbolTable implements ISymbolTable {
+public class SymbolTable implements ISymbolTable {
     Writer writer;
     //    HashMap<String, Stack<Symbol>> symbolTable;
     Stack<HashMap<String, Symbol>> symbolTable;
@@ -21,9 +21,9 @@ class SymbolTable implements ISymbolTable {
 
     @Override
     public void insertSymbol(Symbol symbol) {
+        // TODO: Check if symbol is already defined in current scope!
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
-        System.out.printf("symbol inserted: %s\n", symbol.format());
 
         try {
             writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
