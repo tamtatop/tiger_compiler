@@ -122,9 +122,16 @@ package com.tiger;
 
 
 import com.tiger.antlr.TigerParser;
+import com.tiger.symbols.Symbol;
+import com.tiger.symbols.SymbolKind;
+import com.tiger.symbols.VariableSymbol;
+import com.tiger.types.*;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.io.Writer;
+
+import static java.lang.Integer.parseInt;
 
 class SemanticChecker {
     SymbolTable symbolTable;
@@ -152,9 +159,44 @@ class SemanticChecker {
     }
 
     public void visitVarDeclaration(TigerParser.Var_declarationContext ctx, boolean isRoot) throws SemanticException {
-        if (ctx.storage_class().STATIC() == null && !isRoot) {
-            throw new SemanticException("var declaration is not allowed in root", ctx.storage_class().getStart());
+        if (ctx.storage_class().STATIC() == null && isRoot) {
+            throw new SemanticException("var declaration is not allowed in global section", ctx.storage_class().getStart());
+        } else if (ctx.storage_class().STATIC() != null && !isRoot) {
+            throw new SemanticException("static declaration is not allowed in local section", ctx.storage_class().getStart());
         }
+        SymbolKind symbolKind;
+        if (ctx.storage_class().STATIC() != null) {
+            symbolKind = SymbolKind.STATIC;
+        } else {
+            symbolKind = SymbolKind.VARIABLE;
+        }
+        Type symbolType = parseType(ctx.type());
+
+        // id_list: ID | ID COMMA id_list;
+        TigerParser.Id_listContext id_ctx = ctx.id_list();
+        while (id_ctx.id_list() != null) {
+            String name = id_ctx.ID().getText();
+            symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
+            id_ctx = id_ctx.id_list();
+        }
+    }
+
+    public Type parseBaseType(TigerParser.Base_typeContext ctx) {
+        return switch (ctx.getText()) {
+            case "int" -> new IntType();
+            case "float" -> new FloatType();
+            default -> throw new IllegalStateException("Expected base_type got: " + ctx.getText());
+        };
+    }
+
+    public Type parseType(TigerParser.TypeContext ctx) {
+        if (ctx.ARRAY() != null) {
+            return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
+        }
+        if (ctx.ID() != null) {
+            return new CustomType(ctx.ID().getText());
+        }
+        return parseBaseType(ctx.base_type());
     }
 }
 
