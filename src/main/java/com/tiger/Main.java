@@ -84,6 +84,11 @@ public class Main {
         } catch (SemanticException e) {
             System.err.printf("line %d:%d %s", e.line_number, e.column_number, e.message);
         }
+        try {
+            symbolTableWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

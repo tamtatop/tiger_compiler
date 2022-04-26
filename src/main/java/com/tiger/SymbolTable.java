@@ -2,6 +2,7 @@ package com.tiger;
 
 import com.tiger.symbols.Symbol;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Stack;
@@ -23,6 +24,12 @@ class SymbolTable implements ISymbolTable {
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
         System.out.printf("symbol inserted: %s\n", symbol.format());
+
+        try {
+            writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -40,11 +47,16 @@ class SymbolTable implements ISymbolTable {
         HashMap<String, Symbol> scope = new HashMap<>();
         symbolTable.push(scope);
         cur_scope_id += 1;
+
+        try {
+            writer.write(String.format("%sscope %d:\n", "\t".repeat(symbolTable.size() - 1), cur_scope_id));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void dropScope() {
         symbolTable.pop();
-        cur_scope_id -= 1;
     }
 }
