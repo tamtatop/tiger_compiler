@@ -67,6 +67,53 @@ class SymbolTable implements ISymbolTable {
     }
 }
 
+
+class ParamListVisitor extends TigerBaseVisitor<List<Symbol>> {
+    @Override
+    public ArrayList<Symbol> visitParam_list(TigerParser.Param_listContext ctx) {
+        if (ctx.param() == null) {
+            return new ArrayList<>();
+        } else {
+            ArrayList<Symbol> params = visitParam_list_tail(ctx.param_list_tail());
+            params.add(parseParam(ctx.param()));
+            return params;
+        }
+    }
+
+    @Override
+    public ArrayList<Symbol> visitParam_list_tail(TigerParser.Param_list_tailContext ctx) {
+        if (ctx.param() == null) {
+            return new ArrayList<>();
+        } else {
+            ArrayList<Symbol> params = visitParam_list_tail(ctx.param_list_tail());
+            params.add(parseParam(ctx.param()));
+            return params;
+        }
+    }
+
+    public Symbol parseParam(TigerParser.ParamContext ctx) {
+        return new TypeSymbol(ctx.ID().getText(), new IntType());
+    }
+}
+
+class FunctionListVisitor {
+
+    public ArrayList<FunctionSymbol> visit_function_list(TigerParser.Funct_listContext ctx) {
+        if (ctx.funct() == null) {
+            return new ArrayList<>();
+        } else {
+            ArrayList<FunctionSymbol> functionSymbols = visit_function_list(ctx.funct_list());
+            functionSymbols.add(parseFunct(ctx.funct()));
+            return functionSymbols;
+        }
+    }
+
+    public FunctionSymbol parseFunct(TigerParser.FunctContext ctx) {
+        return new FunctionSymbol(ctx.ID().getText(), new ParamListVisitor().visitParam_list(ctx.param_list()), new IntType());
+    }
+
+}
+
 class SemanticVisitor extends TigerBaseVisitor<Void> {
 
     SymbolTable symbolTable;
