@@ -25,8 +25,8 @@ public class FunctionSymbol implements Symbol {
     }
 
     @Override
-    public String format() {
-        return null;
+    public Type getSymbolType() {
+        return returnType;
     }
 
 }

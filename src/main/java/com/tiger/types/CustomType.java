@@ -13,7 +13,7 @@ public class CustomType implements Type {
     }
 
     @Override
-    public boolean sameType(Type type) {
+    public boolean isSameType(Type type) {
         return type.getKind() == getKind() && ((CustomType) type).typeId.equals(typeId);
     }
 

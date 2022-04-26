@@ -23,10 +23,6 @@ interface ISymbolTable {
 }
 
 
-//
-//
-
-// func, static, var, type
 
 class SymbolTable implements ISymbolTable {
     Writer writer;
@@ -44,6 +40,7 @@ class SymbolTable implements ISymbolTable {
     public void insertSymbol(Symbol symbol) {
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
+        System.out.printf("symbol inserted: %s\n", symbol.format());
     }
 
     @Override
@@ -70,18 +67,23 @@ class SymbolTable implements ISymbolTable {
     }
 }
 
-
 class SemanticVisitor extends TigerBaseVisitor<Void> {
 
     SymbolTable symbolTable;
 
+    public SemanticVisitor(Writer symbolTableWriter) {
+        this.symbolTable = new SymbolTable(symbolTableWriter);
+    }
 
     @Override
     public Void visitTiger_program(TigerParser.Tiger_programContext ctx) {
         System.out.println("visiting tiger_program");
-        System.out.printf("program name: %s!%n", ctx.ID().getText());
+        System.out.printf("program name: %s%n", ctx.ID().getText());
+
+        symbolTable.createScope(); // create global scope
         visitRootDeclaration_segment(ctx.declaration_segment());
         visit(ctx.funct_list());
+        symbolTable.dropScope();
 
         // TODO: code we want to be able to write
 //        Symbol symbol = symbolTable.getSymbol(name);
@@ -104,9 +106,7 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
 
     @Override
     public Void visitType_declaration(TigerParser.Type_declarationContext ctx) {
-        //symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
-        //new TypeSymbol(ctx.ID().getText(), parseType(ctx.type()));
-        System.out.println(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())).format());
+        symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseTypeDeclaration(ctx.type())));
         return super.visitType_declaration(ctx);
     }
 
@@ -118,7 +118,7 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
         };
     }
 
-    public Type parseType(TigerParser.TypeContext ctx) {
+    public Type parseTypeDeclaration(TigerParser.TypeContext ctx) {
         if (ctx.ARRAY() != null) {
             return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
         }
@@ -127,7 +127,7 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
         }
         return parseBaseType(ctx.base_type());
 // maybe possible?
-//        return switch () {
+//        return switch (ctx.getIndex()) {
 //            case 0 -> parseBaseType(ctx.base_type());
 //            case 1 -> new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
 //            case 2 -> new CustomType(ctx.ID().getText());

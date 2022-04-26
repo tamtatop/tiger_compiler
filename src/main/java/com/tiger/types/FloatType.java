@@ -7,7 +7,7 @@ public class FloatType implements Type {
     }
 
     @Override
-    public boolean sameType(Type type) {
+    public boolean isSameType(Type type) {
         return type.getKind() == getKind();
     }
 

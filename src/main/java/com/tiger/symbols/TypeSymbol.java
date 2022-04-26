@@ -22,7 +22,7 @@ public class TypeSymbol implements Symbol {
     }
 
     @Override
-    public String format() {
-        return String.format("%s, type, %s", name, type.format());
+    public Type getSymbolType() {
+        return type;
     }
 }

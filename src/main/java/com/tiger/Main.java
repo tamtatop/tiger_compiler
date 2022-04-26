@@ -79,7 +79,7 @@ public class Main {
         lexer.reset();
         parser.reset();
         ParseTree tree = parser.tiger_program();
-        SemanticVisitor semanticVisitor = new SemanticVisitor();
+        SemanticVisitor semanticVisitor = new SemanticVisitor(symbolTableWriter);
         semanticVisitor.visit(tree);
     }
 

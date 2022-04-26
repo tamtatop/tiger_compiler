@@ -4,7 +4,7 @@ package com.tiger.types;
 public interface Type {
     TypeKind getKind();
 
-    boolean sameType(Type type);
+    boolean isSameType(Type type);
 
     String format();
 }

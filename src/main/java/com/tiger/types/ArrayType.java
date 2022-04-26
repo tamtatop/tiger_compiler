@@ -17,7 +17,7 @@ public class ArrayType implements Type {
     }
 
     @Override
-    public boolean sameType(Type type) {
+    public boolean isSameType(Type type) {
         return type.getKind() == getKind() && ((ArrayType)type).size == size && ((ArrayType)type).elementType == elementType;
     }
 
