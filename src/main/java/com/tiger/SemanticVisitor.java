@@ -3,15 +3,22 @@ package com.tiger;
 import com.tiger.antlr.TigerBaseVisitor;
 import com.tiger.antlr.TigerParser;
 import com.tiger.symbols.Symbol;
+import com.tiger.symbols.TypeSymbol;
+import com.tiger.types.*;
 
 import java.io.Writer;
 import java.util.*;
 
+import static java.lang.Integer.parseInt;
+
 
 interface ISymbolTable {
     void insertSymbol(Symbol symbol);
+
     Symbol getSymbol(String name);
+
     void createScope();
+
     void dropScope();
 }
 
@@ -21,13 +28,13 @@ interface ISymbolTable {
 
 // func, static, var, type
 
-class SymbolTable implements ISymbolTable{
+class SymbolTable implements ISymbolTable {
     Writer writer;
-//    HashMap<String, Stack<Symbol>> symbolTable;
+    //    HashMap<String, Stack<Symbol>> symbolTable;
     Stack<HashMap<String, Symbol>> symbolTable;
     int cur_scope_id;
 
-    public SymbolTable(Writer writer){
+    public SymbolTable(Writer writer) {
         this.writer = writer;
         symbolTable = new Stack<>();
         cur_scope_id = 0;
@@ -41,7 +48,7 @@ class SymbolTable implements ISymbolTable{
 
     @Override
     public Symbol getSymbol(String name) {
-        for (HashMap<String, Symbol> scope: symbolTable) {
+        for (HashMap<String, Symbol> scope : symbolTable) {
             if (scope.containsKey(name)) {
                 return scope.get(name);
             }
@@ -62,7 +69,6 @@ class SymbolTable implements ISymbolTable{
         cur_scope_id -= 1;
     }
 }
-
 
 
 class SemanticVisitor extends TigerBaseVisitor<Void> {
@@ -89,29 +95,45 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
         return null;
     }
 
-    @Override
-    public Void visitDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
-
-        System.out.println("visiting declarations");
-
-        return visitChildren(ctx);
-    }
-
-
-//    funct: FUNCTION ID OPENPAREN param_list CLOSEPAREN ret_type BEGIN stat_seq END;
-    @Override
-    public Void visitFunct(TigerParser.FunctContext ctx) {
-
-        //FunctionSymbol fsymbol = FunctionSymbol(ctx.ID().getText(), ctx.ret_type().type())
-        symbolTable.createScope();
-        Void res = super.visitFunct(ctx);
-        symbolTable.dropScope();
-        return res;
-    }
 
     public void visitRootDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
         System.out.println("visiting root declarations");
-        visitChildren(ctx);
+        visit(ctx.type_declaration_list());
+//        visit(ctx.var_declaration_list());
     }
+
+    @Override
+    public Void visitType_declaration(TigerParser.Type_declarationContext ctx) {
+        //symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
+        //new TypeSymbol(ctx.ID().getText(), parseType(ctx.type()));
+        System.out.println(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())).format());
+        return super.visitType_declaration(ctx);
+    }
+
+    public Type parseBaseType(TigerParser.Base_typeContext ctx) {
+        return switch (ctx.getText()) {
+            case "int" -> new IntType();
+            case "float" -> new FloatType();
+            default -> throw new IllegalStateException("Expected base_type got: " + ctx.getText());
+        };
+    }
+
+    public Type parseType(TigerParser.TypeContext ctx) {
+        if (ctx.ARRAY() != null) {
+            return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
+        }
+        if (ctx.ID() != null) {
+            return new CustomType(ctx.ID().getText());
+        }
+        return parseBaseType(ctx.base_type());
+// maybe possible?
+//        return switch () {
+//            case 0 -> parseBaseType(ctx.base_type());
+//            case 1 -> new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
+//            case 2 -> new CustomType(ctx.ID().getText());
+//            default -> throw new IllegalStateException("Unexpected value: " + ctx.getRuleIndex());
+//        };
+    }
+
 
 }
