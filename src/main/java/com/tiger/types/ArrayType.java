@@ -1,8 +1,5 @@
 package com.tiger.types;
 
-import com.tiger.Type;
-import com.tiger.TypeKind;
-
 class ArrayType implements Type {
     int count;
     Type elementType;

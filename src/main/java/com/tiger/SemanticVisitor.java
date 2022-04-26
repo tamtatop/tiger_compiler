@@ -2,50 +2,17 @@ package com.tiger;
 
 import com.tiger.antlr.TigerBaseVisitor;
 import com.tiger.antlr.TigerParser;
+import com.tiger.symbols.Symbol;
 
 import java.io.Writer;
 import java.util.*;
 
-
-interface Symbol {
-    String getName();
-    Type getSymbolType();
-    String toString();
-}
 
 interface ISymbolTable {
     void insertSymbol(Symbol symbol);
     Symbol getSymbol(String name);
     void createScope();
     void dropScope();
-}
-
-class FunctionSymbol implements Symbol {
-    String name;
-    List<Symbol> params;
-
-    public FunctionSymbol(String name, List<Symbol> params, Type returnType) {
-
-    }
-
-    public boolean checkCall(List<Type> paramTypes, Type returnType) {
-        if(paramTypes.size() != params.size()){
-            return false;
-        }
-        for (int i = 0; i < paramTypes.size(); i++) {
-
-        }
-    }
-
-    public String getName() {
-
-        return null;
-    }
-
-    public String toString() {
-
-    }
-
 }
 
 
@@ -84,7 +51,7 @@ class SymbolTable implements ISymbolTable{
 
     @Override
     public void createScope() {
-        HashMap<String, Symbol> scope = new HashMap<String, Symbol>();
+        HashMap<String, Symbol> scope = new HashMap<>();
         symbolTable.push(scope);
         cur_scope_id += 1;
     }
@@ -110,13 +77,14 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
         visitRootDeclaration_segment(ctx.declaration_segment());
         visit(ctx.funct_list());
 
-        Symbol symbol = symbolTable.getSymbol(name);
-        symbol.getName();
-        symbol.toString();
-        symbolTable = new SymbolTable(writer);
-        symbolTable.insertSymbol(symbol);
-        symbolTable.createScope();
-        symbolTable.dropScope();
+        // TODO: code we want to be able to write
+//        Symbol symbol = symbolTable.getSymbol(name);
+//        symbol.getName();
+//        symbol.toString();
+//        symbolTable = new SymbolTable(writer);
+//        symbolTable.insertSymbol(symbol);
+//        symbolTable.createScope();
+//        symbolTable.dropScope();
 
         return null;
     }
@@ -125,9 +93,8 @@ class SemanticVisitor extends TigerBaseVisitor<Void> {
     public Void visitDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
 
         System.out.println("visiting declarations");
-        res = visitChildren(ctx);
 
-        return res;
+        return visitChildren(ctx);
     }
 
 

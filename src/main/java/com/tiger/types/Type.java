@@ -1,4 +1,4 @@
-package com.tiger;
+package com.tiger.types;
 
 
 public interface Type {

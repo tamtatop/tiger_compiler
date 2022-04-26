@@ -1,8 +1,5 @@
 package com.tiger.types;
 
-import com.tiger.Type;
-import com.tiger.TypeKind;
-
 class FloatType implements Type {
     @Override
     public TypeKind getKind() {
