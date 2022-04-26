@@ -78,9 +78,13 @@ public class Main {
         // Experiments
         lexer.reset();
         parser.reset();
-        ParseTree tree = parser.tiger_program();
-        SemanticVisitor semanticVisitor = new SemanticVisitor(symbolTableWriter);
-        semanticVisitor.visit(tree);
+        SemanticChecker semanticChecker = new SemanticChecker(symbolTableWriter);
+        try {
+            semanticChecker.visitTigerProgram(parser.tiger_program());
+        } catch (SemanticException e) {
+            System.err.printf("line %d:%d %s", e.line_number, e.column_number, e.message);
+        }
+
     }
 
 
