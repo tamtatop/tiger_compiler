@@ -1,6 +1,9 @@
 /* selection sort */
 program sort
 let
+static index : int ;
+    static lowestIndex : int ;
+    static subIndex : float ;
 begin
     function main () : int
     begin

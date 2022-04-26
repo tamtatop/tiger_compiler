@@ -13,6 +13,6 @@ public class FloatType implements Type {
 
     @Override
     public String format() {
-        return "int";
+        return "float";
     }
 }

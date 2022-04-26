@@ -133,7 +133,7 @@ import java.io.Writer;
 
 import static java.lang.Integer.parseInt;
 
-class SemanticChecker {
+public class SemanticChecker {
     SymbolTable symbolTable;
 
     public SemanticChecker(Writer symbolTableWriter) {
@@ -155,7 +155,11 @@ class SemanticChecker {
     }
 
     public void visitVarDeclarationList(TigerParser.Var_declaration_listContext ctx, boolean isRoot) throws SemanticException {
+        if (ctx.var_declaration() == null){
+            return;
+        }
         visitVarDeclaration(ctx.var_declaration(), isRoot);
+        visitVarDeclarationList(ctx.var_declaration_list(), isRoot);
     }
 
     public void visitVarDeclaration(TigerParser.Var_declarationContext ctx, boolean isRoot) throws SemanticException {
@@ -173,11 +177,11 @@ class SemanticChecker {
         Type symbolType = parseType(ctx.type());
 
         // id_list: ID | ID COMMA id_list;
-        TigerParser.Id_listContext id_ctx = ctx.id_list();
-        while (id_ctx.id_list() != null) {
-            String name = id_ctx.ID().getText();
+        TigerParser.Id_listContext idCtx = ctx.id_list();
+        while (idCtx != null) {
+            String name = idCtx.ID().getText();
             symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
-            id_ctx = id_ctx.id_list();
+            idCtx = idCtx.id_list();
         }
     }
 
