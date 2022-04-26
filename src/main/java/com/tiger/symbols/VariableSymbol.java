@@ -11,7 +11,7 @@ public class VariableSymbol implements Symbol {
         this.name = name;
         this.variableType = variableType;
         this.kind = kind;
-        assert kind == SymbolKind.STATIC || kind == SymbolKind.VARIABLE;
+        assert kind == SymbolKind.STATIC || kind == SymbolKind.VARIABLE || kind == SymbolKind.PARAM;
     }
 
     @Override

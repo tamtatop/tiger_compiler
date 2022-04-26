@@ -1,136 +1,12 @@
 package com.tiger;
-//
-//import com.tiger.antlr.TigerBaseVisitor;
-//import com.tiger.antlr.TigerParser;
-//import com.tiger.symbols.FunctionSymbol;
-//import com.tiger.symbols.Symbol;
-//import com.tiger.symbols.TypeSymbol;
-//import com.tiger.types.*;
-//
-//import java.io.Writer;
-//import java.util.*;
-//
-//import static java.lang.Integer.parseInt;
-//
-//class ParamListVisitor extends TigerBaseVisitor<List<Symbol>> {
-//    @Override
-//    public ArrayList<Symbol> visitParam_list(TigerParser.Param_listContext ctx) {
-//        if (ctx.param() == null) {
-//            return new ArrayList<>();
-//        } else {
-//            ArrayList<Symbol> params = visitParam_list_tail(ctx.param_list_tail());
-//            params.add(parseParam(ctx.param()));
-//            return params;
-//        }
-//    }
-//
-//    @Override
-//    public ArrayList<Symbol> visitParam_list_tail(TigerParser.Param_list_tailContext ctx) {
-//        if (ctx.param() == null) {
-//            return new ArrayList<>();
-//        } else {
-//            ArrayList<Symbol> params = visitParam_list_tail(ctx.param_list_tail());
-//            params.add(parseParam(ctx.param()));
-//            return params;
-//        }
-//    }
-//
-//    public Symbol parseParam(TigerParser.ParamContext ctx) {
-//        return new TypeSymbol(ctx.ID().getText(), new IntType());
-//    }
-//}
-//
-//class FunctionListVisitor {
-//
-//    public ArrayList<FunctionSymbol> visit_function_list(TigerParser.Funct_listContext ctx) {
-//        if (ctx.funct() == null) {
-//            return new ArrayList<>();
-//        } else {
-//            ArrayList<FunctionSymbol> functionSymbols = visit_function_list(ctx.funct_list());
-//            functionSymbols.add(parseFunct(ctx.funct()));
-//            return functionSymbols;
-//        }
-//    }
-//
-//    public FunctionSymbol parseFunct(TigerParser.FunctContext ctx) {
-//        return new FunctionSymbol(ctx.ID().getText(), new ParamListVisitor().visitParam_list(ctx.param_list()), new IntType());
-//    }
-//
-//}
-//
-//class SemanticVisitor extends TigerBaseVisitor<Void> {
-//
-//    SymbolTable symbolTable;
-//
-//    public SemanticVisitor(Writer symbolTableWriter) {
-//        this.symbolTable = new SymbolTable(symbolTableWriter);
-//    }
-//
-//    @Override
-//    public Void visitTiger_program(TigerParser.Tiger_programContext ctx) {
-//        System.out.println("visiting tiger_program");
-//        System.out.printf("program name: %s%n", ctx.ID().getText());
-//
-//        symbolTable.createScope(); // create global scope
-//        visitRootDeclaration_segment(ctx.declaration_segment());
-//        visit(ctx.funct_list());
-//        symbolTable.dropScope();
-//
-//        return null;
-//    }
-//
-//
-//    public void visitRootDeclaration_segment(TigerParser.Declaration_segmentContext ctx) {
-//        System.out.println("visiting root declarations");
-//        visit(ctx.type_declaration_list());
-////        visit(ctx.var_declaration_list());
-//    }
-//
-//    @Override
-//    public Void visitType_declaration(TigerParser.Type_declarationContext ctx) {
-//        symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseTypeDeclaration(ctx.type())));
-//        return super.visitType_declaration(ctx);
-//    }
-//
-//    public Type parseBaseType(TigerParser.Base_typeContext ctx) {
-//        return switch (ctx.getText()) {
-//            case "int" -> new IntType();
-//            case "float" -> new FloatType();
-//            default -> throw new IllegalStateException("Expected base_type got: " + ctx.getText());
-//        };
-//    }
-//
-//    public Type parseTypeDeclaration(TigerParser.TypeContext ctx) {
-//        if (ctx.ARRAY() != null) {
-//            return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
-//        }
-//        if (ctx.ID() != null) {
-//            return new CustomType(ctx.ID().getText());
-//        }
-//        return parseBaseType(ctx.base_type());
-//// maybe possible?
-////        return switch (ctx.getIndex()) {
-////            case 0 -> parseBaseType(ctx.base_type());
-////            case 1 -> new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
-////            case 2 -> new CustomType(ctx.ID().getText());
-////            default -> throw new IllegalStateException("Unexpected value: " + ctx.getRuleIndex());
-////        };
-//    }
-//
-//
-//}
-
 
 import com.tiger.antlr.TigerParser;
-import com.tiger.symbols.Symbol;
-import com.tiger.symbols.SymbolKind;
-import com.tiger.symbols.TypeSymbol;
-import com.tiger.symbols.VariableSymbol;
+import com.tiger.symbols.*;
 import com.tiger.types.*;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
@@ -144,10 +20,38 @@ public class SemanticChecker {
     public void visitTigerProgram(TigerParser.Tiger_programContext ctx) throws SemanticException {
         symbolTable.createScope();
         // DO WORK BITCH
-        System.out.println(ctx.ID().getText());
+        System.out.printf("Hello program %s!\n", ctx.ID().getText());
         visitDeclarationSegment(ctx.declaration_segment(), true);
-
+        visitFunctionList(ctx.funct_list(), false);
+        visitFunctionList(ctx.funct_list(), true);
         symbolTable.dropScope();
+    }
+
+    /**
+     * @param parseBody For first pass we only want to put function symbols in symbol tables.
+     *                  We don't want to parse bodies of functions.
+     */
+    public void visitFunctionList(TigerParser.Funct_listContext ctx, boolean parseBody) {
+        if (ctx.funct() == null) {
+            return;
+        }
+        visitFunction(ctx.funct(), parseBody);
+        visitFunctionList(ctx.funct_list(), parseBody);
+    }
+
+    // funct: FUNCTION ID OPENPAREN param_list CLOSEPAREN ret_type BEGIN stat_seq END;
+
+    /**
+     * @param parseBody For first pass we only want to put function symbols in symbol tables.
+     *                  We don't want to parse bodies of functions.
+     */
+    public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) {
+        if (!parseBody) {
+            Type type = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
+            symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), type));
+        } else {
+            // actually recurse into body of the function here.
+        }
     }
 
     public void visitDeclarationSegment(TigerParser.Declaration_segmentContext ctx, boolean isRoot) throws SemanticException {
@@ -156,7 +60,7 @@ public class SemanticChecker {
     }
 
     public void visitVarDeclarationList(TigerParser.Var_declaration_listContext ctx, boolean isRoot) throws SemanticException {
-        if (ctx.var_declaration() == null){
+        if (ctx.var_declaration() == null) {
             return;
         }
         visitVarDeclaration(ctx.var_declaration(), isRoot);
@@ -187,7 +91,7 @@ public class SemanticChecker {
     }
 
     public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) {
-        if(ctx.type_declaration() == null){
+        if (ctx.type_declaration() == null) {
             return;
         }
         visitTypeDeclaration(ctx.type_declaration());
@@ -197,6 +101,24 @@ public class SemanticChecker {
     public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) {
         symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
     }
+
+    public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) {
+        ArrayList<Symbol> params = new ArrayList<>();
+        if (ctx.param() != null) {
+            params.add(parseParam(ctx.param()));
+            TigerParser.Param_list_tailContext cur = ctx.param_list_tail();
+            while (cur.param() != null) {
+                params.add(parseParam(ctx.param()));
+                cur = cur.param_list_tail();
+            }
+        }
+        return params;
+    }
+
+    public Symbol parseParam(TigerParser.ParamContext ctx) {
+        return new VariableSymbol(ctx.ID().getText(), parseType(ctx.type()), SymbolKind.PARAM);
+    }
+
 
     public Type parseBaseType(TigerParser.Base_typeContext ctx) {
         return switch (ctx.getText()) {
@@ -216,30 +138,5 @@ public class SemanticChecker {
         return parseBaseType(ctx.base_type());
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
