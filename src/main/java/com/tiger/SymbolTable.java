@@ -2,10 +2,12 @@ package com.tiger;
 
 import com.tiger.symbols.Symbol;
 
+import javax.management.openmbean.KeyAlreadyExistsException;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Stack;
+
 
 public class SymbolTable implements ISymbolTable {
     Writer writer;
@@ -20,8 +22,10 @@ public class SymbolTable implements ISymbolTable {
     }
 
     @Override
-    public void insertSymbol(Symbol symbol) {
-        // TODO: Check if symbol is already defined in current scope!
+    public void insertSymbol(Symbol symbol) throws SymbolTableDuplicateKeyException {
+        if (currentScopeContains(symbol.getName())) {
+            throw new SymbolTableDuplicateKeyException(symbol.getName());
+        }
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
 
@@ -30,6 +34,15 @@ public class SymbolTable implements ISymbolTable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean currentScopeContains(String name) {
+        return symbolTable.peek().containsKey(name);
+    }
+
+    @Override
+    public String curScopeName() {
+        return String.valueOf(cur_scope_id);
     }
 
     @Override
