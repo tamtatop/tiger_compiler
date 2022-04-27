@@ -82,7 +82,7 @@ public class Main {
         try {
             semanticChecker.visitTigerProgram(parser.tiger_program());
         } catch (SemanticException e) {
-            System.err.printf("line %d:%d %s", e.line_number, e.column_number, e.message);
+            System.err.printf("line %d:%d %s\n", e.line_number, e.column_number, e.message);
         }
         try {
             symbolTableWriter.close();

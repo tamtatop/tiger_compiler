@@ -3,7 +3,7 @@ program fib
 let
     static result : int;
 begin
-    function fib (n : int) : int
+    function fib (n : int, m: int, x: float, x: int) : int
     begin
         let
             var tmp1, tmp2 : int := 0;

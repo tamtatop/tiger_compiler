@@ -6,12 +6,14 @@ import com.tiger.types.*;
 
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
 public class SemanticChecker {
     SymbolTable symbolTable;
+
 
     public SemanticChecker(Writer symbolTableWriter) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
@@ -127,11 +129,25 @@ public class SemanticChecker {
 
     public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) throws SemanticException {
         ArrayList<Symbol> params = new ArrayList<>();
+        HashSet<String> argNames = new HashSet<>();
         if (ctx.param() != null) {
-            params.add(parseParam(ctx.param()));
+
+            Symbol symbol = parseParam(ctx.param());
+            String name = symbol.getName();
+            argNames.add(name);
+            params.add(symbol);
+
             TigerParser.Param_list_tailContext cur = ctx.param_list_tail();
             while (cur.param() != null) {
-                params.add(parseParam(ctx.param()));
+
+                symbol = parseParam(cur.param());
+                name = symbol.getName();
+                if(argNames.contains(name)){
+                    throw new SemanticException(String.format("duplicate parameter %s", name), cur.param().start);
+                }
+                argNames.add(name);
+                params.add(symbol);
+
                 cur = cur.param_list_tail();
             }
         }
