@@ -1,11 +1,14 @@
 package com.tiger;
 
 import com.tiger.symbols.Symbol;
+import com.tiger.symbols.SymbolKind;
 
 import javax.management.openmbean.KeyAlreadyExistsException;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 
 
@@ -71,5 +74,17 @@ public class SymbolTable implements ISymbolTable {
     @Override
     public void dropScope() {
         symbolTable.pop();
+    }
+
+    public List<NakedVariable> getNakedVariables() {
+        HashMap<String, Symbol> scope = symbolTable.peek();
+        List<NakedVariable> nakedVars = new ArrayList<>();
+        scope.forEach((name, symbol) -> {
+            if (symbol.getSymbolKind() == SymbolKind.FUNCTION || symbol.getSymbolKind() == SymbolKind.TYPE) {
+                return;
+            }
+            nakedVars.add(new NakedVariable(name, curScopeName(), symbol.getSymbolType().typeStructure()));
+        });
+        return nakedVars;
     }
 }
