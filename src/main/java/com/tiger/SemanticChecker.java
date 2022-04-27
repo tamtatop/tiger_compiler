@@ -1,21 +1,97 @@
 package com.tiger;
 
 import com.tiger.antlr.TigerParser;
+import com.tiger.io.CancellableWriter;
 import com.tiger.symbols.*;
 import com.tiger.types.*;
 
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
+class IrGenerator {
+    CancellableWriter writer;
+
+    public IrGenerator(CancellableWriter writer) {
+        this.writer = writer;
+    }
+
+    private String mangledName(NakedVariable v) {
+        if(v.scopeName == null){
+            return "_" + v.name;
+        } else {
+            return "_" + v.scopeName + "_" + v.name;
+        }
+    }
+
+    private String generateSpecificTypeVariablesNames(List<NakedVariable> variables, BaseType desiredType) {
+        StringBuilder names = new StringBuilder();
+        for (NakedVariable variable : variables) {
+            if(variable.typeStructure.base == desiredType) {
+                if(variable.typeStructure.isArray()) {
+                    names.append(String.format(" %s[%d],",
+                            mangledName(variable),
+                            variable.typeStructure.arraySize));
+                } else {
+                    names.append(String.format(" %s,", mangledName(variable)));
+                }
+            }
+        }
+        if(names.isEmpty()) {
+            return names.toString();
+        } else {
+            return names.substring(0, names.length()-1);
+        }
+    }
+
+
+    private void generateVariableLists(String prefix, List<NakedVariable> variables) {
+        writer.write(prefix+"int-list:");
+        writer.write(generateSpecificTypeVariablesNames(variables, BaseType.INT));
+        writer.write("\n");
+        writer.write(prefix+"float-list: ");
+        writer.write(generateSpecificTypeVariablesNames(variables, BaseType.FLOAT));
+        writer.write("\n");
+    }
+
+    public void generateProgramHeader(String programName, List<NakedVariable> variables) {
+        writer.write(String.format("start_program %s\n", programName));
+        generateVariableLists("static-", variables);
+    }
+//
+//    public startFunction() {
+//
+//    }
+//
+//    public generateExprCode() {
+//
+//    }
+//
+//    public addVariablesFromScope() {
+//
+//    }
+//
+//    public String generateTemporaryVariable(){
+//        currentFunctionVariables.add(random);
+//        return random;
+//    }
+//
+//    public flushFunction() {
+//
+//    }
+
+}
+
 public class SemanticChecker {
     SymbolTable symbolTable;
+    IrGenerator ir;
 
-    public SemanticChecker(Writer symbolTableWriter) {
+
+    public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
+        this.ir = new IrGenerator(irWriter);
     }
 
     public void visitTigerProgram(TigerParser.Tiger_programContext ctx) throws SemanticException {
@@ -23,6 +99,7 @@ public class SemanticChecker {
         // DO WORK BITCH
         System.out.printf("Hello program %s!\n", ctx.ID().getText());
         visitDeclarationSegment(ctx.declaration_segment(), true);
+        ir.generateProgramHeader(ctx.ID().getText(), symbolTable.getNakedVariables());
         visitFunctionList(ctx.funct_list(), false);
         visitFunctionList(ctx.funct_list(), true);
         symbolTable.dropScope();

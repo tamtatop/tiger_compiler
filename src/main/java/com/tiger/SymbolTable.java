@@ -1,11 +1,9 @@
 package com.tiger;
 
+import com.tiger.io.CancellableWriter;
 import com.tiger.symbols.Symbol;
 import com.tiger.symbols.SymbolKind;
 
-import javax.management.openmbean.KeyAlreadyExistsException;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,12 +11,12 @@ import java.util.Stack;
 
 
 public class SymbolTable implements ISymbolTable {
-    Writer writer;
+    CancellableWriter writer;
     //    HashMap<String, Stack<Symbol>> symbolTable;
     Stack<HashMap<String, Symbol>> symbolTable;
     int cur_scope_id;
 
-    public SymbolTable(Writer writer) {
+    public SymbolTable(CancellableWriter writer) {
         this.writer = writer;
         symbolTable = new Stack<>();
         cur_scope_id = 0;
@@ -32,11 +30,7 @@ public class SymbolTable implements ISymbolTable {
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
 
-        try {
-            writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
     }
 
     public boolean currentScopeContains(String name) {
@@ -64,11 +58,7 @@ public class SymbolTable implements ISymbolTable {
         symbolTable.push(scope);
         cur_scope_id += 1;
 
-        try {
-            writer.write(String.format("%sscope %d:\n", "\t".repeat(symbolTable.size() - 1), cur_scope_id));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.write(String.format("%sscope %d:\n", "\t".repeat(symbolTable.size() - 1), cur_scope_id));
     }
 
     @Override

@@ -1,25 +1,18 @@
-package com.tiger;
+package com.tiger.io;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Path;
 
 public class IOUtils {
-    public static Writer writerOrSinkFromFilename(String filename) {
-        Writer f = null;
+    public static CancellableWriter writerOrSinkFromFilename(String filename) {
+        CancellableWriter f;
         if (filename != null) {
-            try {
-                f = new FileWriter(filename);
-            } catch (IOException e) {
-                System.err.println("Can't create file " + filename);
-                System.exit(1);
-            }
+            f = new FileCancellableWriter(filename);
         } else {
-            f = new NullWriter();
+            f = new NullCancellableWriter();
         }
         return f;
     }
