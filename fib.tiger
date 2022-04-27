@@ -1,0 +1,27 @@
+/* Recursive Fibonacci */
+program fib
+let
+    static result : int;
+begin
+    function fib (n : int) : int
+    begin
+        let
+            var tmp1, tmp2 : int := 0;
+        begin
+            if (n <= 1) then
+                return n;
+            else
+                tmp1 := fib(n-1);
+                tmp2 := fib(n-2);
+                return tmp1 + tmp2;
+            endif;
+        end
+    end
+
+    function main() : int
+    begin
+        result := fib(12);
+        printi(result);
+        return 0;
+    end
+end
