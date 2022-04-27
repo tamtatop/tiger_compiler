@@ -1,14 +1,11 @@
 package com.tiger.types;
 
 public class ArrayType implements Type {
-    int size;
-    Type elementType;
+    TypeStructure typeStructure;
 
-    public ArrayType(int size, Type elementType) {
+    public ArrayType(int size, BaseType elementType) {
         assert size > 0;
-        assert elementType.getKind() == TypeKind.FLOAT || elementType.getKind() == TypeKind.INT;
-        this.size = size;
-        this.elementType = elementType;
+        this.typeStructure = new TypeStructure(elementType, size);
     }
 
     @Override
@@ -17,12 +14,12 @@ public class ArrayType implements Type {
     }
 
     @Override
-    public boolean isSameType(Type type) {
-        return type.getKind() == getKind() && ((ArrayType)type).size == size && ((ArrayType)type).elementType == elementType;
+    public TypeStructure typeStructure() {
+        return typeStructure;
     }
 
     @Override
     public String format() {
-        return String.format("array [%d] of %s", size, elementType.format());
+        return String.format("array [%d] of %s", typeStructure.arraySize, typeStructure.base.format());
     }
 }

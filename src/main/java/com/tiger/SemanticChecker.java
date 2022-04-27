@@ -113,7 +113,7 @@ public class SemanticChecker {
         }
     }
 
-    public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) {
+    public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) throws SemanticException {
         if (ctx.type_declaration() == null) {
             return;
         }
@@ -121,11 +121,11 @@ public class SemanticChecker {
         visitTypeDeclarationList(ctx.type_declaration_list());
     }
 
-    public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) {
+    public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) throws SemanticException {
         symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
     }
 
-    public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) {
+    public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) throws SemanticException {
         ArrayList<Symbol> params = new ArrayList<>();
         if (ctx.param() != null) {
             params.add(parseParam(ctx.param()));
@@ -138,27 +138,34 @@ public class SemanticChecker {
         return params;
     }
 
-    public Symbol parseParam(TigerParser.ParamContext ctx) {
+    public Symbol parseParam(TigerParser.ParamContext ctx) throws SemanticException {
         return new VariableSymbol(ctx.ID().getText(), parseType(ctx.type()), SymbolKind.PARAM);
     }
 
-
-    public Type parseBaseType(TigerParser.Base_typeContext ctx) {
+    public BaseType parseBaseType(TigerParser.Base_typeContext ctx) {
         return switch (ctx.getText()) {
-            case "int" -> new IntType();
-            case "float" -> new FloatType();
+            case "int" -> BaseType.INT;
+            case "float" -> BaseType.FLOAT;
             default -> throw new IllegalStateException("Expected base_type got: " + ctx.getText());
         };
     }
 
-    public Type parseType(TigerParser.TypeContext ctx) {
+    public Type parseType(TigerParser.TypeContext ctx) throws SemanticException {
         if (ctx.ARRAY() != null) {
             return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
         }
         if (ctx.ID() != null) {
-            return new CustomType(ctx.ID().getText());
+            String typeName = ctx.ID().getText();
+            Symbol symbol = symbolTable.getSymbol(typeName);
+            if(symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE){
+                throw new SemanticException(String.format("Type %s does not exist",typeName), ctx.ID().getSymbol());
+            }
+            return new CustomType(typeName, symbol.getSymbolType().typeStructure());
         }
-        return parseBaseType(ctx.base_type());
+        return switch (parseBaseType(ctx.base_type())) {
+            case INT -> new IntType();
+            case FLOAT -> new FloatType();
+        };
     }
 }
 

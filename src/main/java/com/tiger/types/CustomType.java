@@ -2,9 +2,11 @@ package com.tiger.types;
 
 public class CustomType implements Type {
     String typeId;
+    TypeStructure typeStructure;
 
-    public CustomType(String typeId) {
+    public CustomType(String typeId, TypeStructure underlyingTypeStructure) {
         this.typeId = typeId;
+        this.typeStructure = underlyingTypeStructure;
     }
 
     @Override
@@ -13,8 +15,8 @@ public class CustomType implements Type {
     }
 
     @Override
-    public boolean isSameType(Type type) {
-        return type.getKind() == getKind() && ((CustomType) type).typeId.equals(typeId);
+    public TypeStructure typeStructure() {
+        return typeStructure;
     }
 
     @Override

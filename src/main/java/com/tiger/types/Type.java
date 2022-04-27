@@ -4,7 +4,11 @@ package com.tiger.types;
 public interface Type {
     TypeKind getKind();
 
-    boolean isSameType(Type type);
+    default boolean isSameType(Type other) {
+        return this.typeStructure().isSame(other.typeStructure());
+    }
+
+    TypeStructure typeStructure();
 
     String format();
 }
