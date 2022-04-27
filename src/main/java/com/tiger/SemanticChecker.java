@@ -48,9 +48,12 @@ public class SemanticChecker {
      */
     public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) throws SemanticException {
         if (!parseBody) {
-            Type type = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
+            Type returnType = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
+            if (returnType != null && returnType.typeStructure().isArray()) {
+                throw new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start);
+            }
             try {
-                symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), type));
+                symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
             } catch (SymbolTableDuplicateKeyException e){
                 throw new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
             }
