@@ -5,9 +5,9 @@ import com.tiger.types.Type;
 import java.util.List;
 
 public class FunctionSymbol implements Symbol {
-    String name;
-    List<Symbol> params;
-    Type returnType;
+    public String name;
+    public List<Symbol> params;
+    public Type returnType;
 
     public FunctionSymbol(String name, List<Symbol> params, Type returnType) {
         this.name = name;

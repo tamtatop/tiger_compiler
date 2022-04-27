@@ -31,7 +31,7 @@ public class SemanticChecker {
      * @param parseBody For first pass we only want to put function symbols in symbol tables.
      *                  We don't want to parse bodies of functions.
      */
-    public void visitFunctionList(TigerParser.Funct_listContext ctx, boolean parseBody) {
+    public void visitFunctionList(TigerParser.Funct_listContext ctx, boolean parseBody) throws SemanticException {
         if (ctx.funct() == null) {
             return;
         }
@@ -45,12 +45,35 @@ public class SemanticChecker {
      * @param parseBody For first pass we only want to put function symbols in symbol tables.
      *                  We don't want to parse bodies of functions.
      */
-    public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) {
+    public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) throws SemanticException {
         if (!parseBody) {
             Type type = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
             symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), type));
         } else {
             // actually recurse into body of the function here.
+            symbolTable.createScope();
+            FunctionSymbol funcSymbol = (FunctionSymbol)symbolTable.getSymbol(ctx.ID().getText());
+            for (Symbol param: funcSymbol.params) {
+                symbolTable.insertSymbol(param);
+            }
+            visitStatSeq(ctx.stat_seq());
+            symbolTable.dropScope();
+        }
+    }
+
+    public void visitStatSeq(TigerParser.Stat_seqContext ctx) throws SemanticException {
+        while (ctx != null) {
+            visitStat(ctx.stat());
+            ctx = ctx.stat_seq();
+        }
+    }
+
+    public void visitStat(TigerParser.StatContext ctx) throws SemanticException {
+        if (ctx.LET() != null) {
+            symbolTable.createScope();
+            visitDeclarationSegment(ctx.declaration_segment(), false);
+            visitStatSeq(ctx.stat_seq(0));
+            symbolTable.dropScope();
         }
     }
 
