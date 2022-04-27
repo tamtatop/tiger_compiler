@@ -14,7 +14,6 @@ import static java.lang.Integer.parseInt;
 public class SemanticChecker {
     SymbolTable symbolTable;
 
-
     public SemanticChecker(Writer symbolTableWriter) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
     }
@@ -49,8 +48,15 @@ public class SemanticChecker {
      */
     public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) throws SemanticException {
         if (!parseBody) {
-            Type type = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
-            symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), type));
+            Type returnType = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
+            if (returnType != null && returnType.typeStructure().isArray()) {
+                throw new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start);
+            }
+            try {
+                symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
+            } catch (SymbolTableDuplicateKeyException e){
+                throw new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
+            }
         } else {
             // actually recurse into body of the function here.
             symbolTable.createScope();
@@ -110,7 +116,11 @@ public class SemanticChecker {
         TigerParser.Id_listContext idCtx = ctx.id_list();
         while (idCtx != null) {
             String name = idCtx.ID().getText();
-            symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
+            try {
+                symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
+            } catch (SymbolTableDuplicateKeyException e){
+                throw new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol());
+            }
             idCtx = idCtx.id_list();
         }
     }
@@ -124,7 +134,11 @@ public class SemanticChecker {
     }
 
     public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) throws SemanticException {
-        symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
+        try {
+            symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
+        } catch (SymbolTableDuplicateKeyException e) {
+            throw new SemanticException("Type" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
+        }
     }
 
     public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) throws SemanticException {
@@ -155,7 +169,11 @@ public class SemanticChecker {
     }
 
     public Symbol parseParam(TigerParser.ParamContext ctx) throws SemanticException {
-        return new VariableSymbol(ctx.ID().getText(), parseType(ctx.type()), SymbolKind.PARAM);
+        Type paramType = parseType(ctx.type());
+        if (paramType.typeStructure().isArray()) {
+            throw new SemanticException(String.format("parameter %s can't be array", ctx.ID().getText()), ctx.ID().getSymbol());
+        }
+        return new VariableSymbol(ctx.ID().getText(), paramType, SymbolKind.PARAM);
     }
 
     public BaseType parseBaseType(TigerParser.Base_typeContext ctx) {
