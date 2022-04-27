@@ -166,7 +166,11 @@ public class SemanticChecker {
     }
 
     public Symbol parseParam(TigerParser.ParamContext ctx) throws SemanticException {
-        return new VariableSymbol(ctx.ID().getText(), parseType(ctx.type()), SymbolKind.PARAM);
+        Type paramType = parseType(ctx.type());
+        if (paramType.typeStructure().isArray()) {
+            throw new SemanticException(String.format("parameter %s can't be array", ctx.ID().getText()), ctx.ID().getSymbol());
+        }
+        return new VariableSymbol(ctx.ID().getText(), paramType, SymbolKind.PARAM);
     }
 
     public BaseType parseBaseType(TigerParser.Base_typeContext ctx) {
