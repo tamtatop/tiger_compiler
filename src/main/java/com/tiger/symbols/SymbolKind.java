@@ -6,6 +6,7 @@ public enum SymbolKind {
     VARIABLE,
     STATIC,
     PARAM, // TODO: Does this need to be separate from VARIABLE?
+    TEMP, // TODO: Do not print these in `.st` file
     ;
 
     public String format() {
@@ -14,6 +15,7 @@ public enum SymbolKind {
             case FUNCTION -> "function";
             case VARIABLE, PARAM -> "variable";
             case STATIC -> "static";
+            case TEMP -> "temporary";
         };
     }
 }

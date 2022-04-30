@@ -61,6 +61,7 @@ class IrGenerator {
         generateVariableLists("static-", variables);
     }
 
+
     public void emitAssign(Value target, NakedVariable source) {
         if(target.array_idx == null){
             writer.write(String.format("assign, %s, %s,\n", mangledName(target.variable), mangledName(source)));
@@ -198,6 +199,10 @@ public class SemanticChecker {
     public NakedVariable generateExpr(TigerParser.ExprContext ctx) {
         if(ctx.value() != null){
             return getValue(ctx.value()).variable; // FIXME: wrong for array value
+        }
+        if(ctx.numeric_const() != null){
+            String tmpName = symbolTable.generateTemporary(BaseType.FLOAT);
+            return symbolTable.getNaked(tmpName);
         }
         // not implemented yet
         return null;
