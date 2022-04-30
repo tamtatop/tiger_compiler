@@ -4,7 +4,7 @@ let
     type catList = array [8] of int;
     static result : int;
 begin
-    function fib (n : int, m: int, x: float) : catList
+    function fib (n : int, m: int, x: float) : tako
     begin
         let
             var tmp1, tmp2 : int := 0;

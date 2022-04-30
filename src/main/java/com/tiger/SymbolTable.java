@@ -77,4 +77,16 @@ public class SymbolTable implements ISymbolTable {
         });
         return nakedVars;
     }
+
+    public NakedVariable getNaked(String name){
+        // TODO: handle these null cases
+        Symbol symbol = getSymbol(name);
+        if(symbol == null){
+            return null;
+        }
+        if (symbol.getSymbolKind() == SymbolKind.FUNCTION || symbol.getSymbolKind() == SymbolKind.TYPE) {
+            return null;
+        }
+        return new NakedVariable(name, curScopeName(), symbol.getSymbolType().typeStructure());
+    }
 }

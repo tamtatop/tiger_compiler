@@ -2,14 +2,14 @@ package com.tiger;
 
 import com.tiger.symbols.Symbol;
 
-import javax.management.openmbean.KeyAlreadyExistsException;
 
 
-class SymbolTableDuplicateKeyException extends KeyAlreadyExistsException {
+class SymbolTableDuplicateKeyException extends Exception {
     public SymbolTableDuplicateKeyException(String msg) {
         super(msg);
     }
 }
+
 
 interface ISymbolTable {
     void insertSymbol(Symbol symbol) throws SymbolTableDuplicateKeyException;

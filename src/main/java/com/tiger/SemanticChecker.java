@@ -60,6 +60,15 @@ class IrGenerator {
         writer.write(String.format("start_program %s\n", programName));
         generateVariableLists("static-", variables);
     }
+
+    public void emitAssign(Value target, NakedVariable source) {
+        if(target.array_idx == null){
+            writer.write(String.format("assign, %s, %s,\n", mangledName(target.variable), mangledName(source)));
+        } else {
+            // TODO: implement array assignement
+        }
+    }
+
 //
 //    public startFunction() {
 //
@@ -139,7 +148,11 @@ public class SemanticChecker {
             symbolTable.createScope();
             FunctionSymbol funcSymbol = (FunctionSymbol)symbolTable.getSymbol(ctx.ID().getText());
             for (Symbol param: funcSymbol.params) {
-                symbolTable.insertSymbol(param);
+                try {
+                    symbolTable.insertSymbol(param);
+                } catch (SymbolTableDuplicateKeyException e) {
+                    // unreachable coz it's already checked
+                }
             }
             visitStatSeq(ctx.stat_seq());
             symbolTable.dropScope();
@@ -153,6 +166,18 @@ public class SemanticChecker {
         }
     }
 
+    // TODO: create new struct Value or something instead of NakedVariable
+    public Value getValue(TigerParser.ValueContext ctx) {
+        // TODO: Handle case where symbol does not exist
+        NakedVariable variable = symbolTable.getNaked(ctx.ID().getText());
+        NakedVariable idx = null;
+        if(ctx.value_tail().expr()!=null){
+            idx = generateExpr(ctx.value_tail().expr());
+        }
+        // TODO: if idx!=null check that variable is actually an array
+        return new Value(variable, idx);
+    }
+
     public void visitStat(TigerParser.StatContext ctx) throws SemanticException {
         if (ctx.LET() != null) {
             symbolTable.createScope();
@@ -160,6 +185,22 @@ public class SemanticChecker {
             visitStatSeq(ctx.stat_seq(0));
             symbolTable.dropScope();
         }
+        // value ASSIGN expr SEMICOLON
+        if(ctx.value() != null){
+            NakedVariable variable = generateExpr(ctx.expr(0));
+            ir.emitAssign(getValue(ctx.value()), variable);
+        }
+    }
+
+
+
+    // let x=y;
+    public NakedVariable generateExpr(TigerParser.ExprContext ctx) {
+        if(ctx.value() != null){
+            return getValue(ctx.value()).variable; // FIXME: wrong for array value
+        }
+        // not implemented yet
+        return null;
     }
 
     public void visitDeclarationSegment(TigerParser.Declaration_segmentContext ctx, boolean isRoot) throws SemanticException {
