@@ -70,6 +70,13 @@ class IrGenerator {
         }
     }
 
+    // Word immediate means same as numeric constant
+    public void emitAssignImmediate(NakedVariable target, Integer imm) {
+        // FIXME: implement same for floats
+        writer.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
+    }
+
+
 //
 //    public startFunction() {
 //
@@ -201,7 +208,9 @@ public class SemanticChecker {
             return getValue(ctx.value()).variable; // FIXME: wrong for array value
         }
         if(ctx.numeric_const() != null){
-            String tmpName = symbolTable.generateTemporary(BaseType.FLOAT);
+            // FIXME: implement floats
+            String tmpName = symbolTable.generateTemporary(BaseType.INT);
+            ir.emitAssignImmediate(symbolTable.getNaked(tmpName), parseInt(ctx.numeric_const().getText()));
             return symbolTable.getNaked(tmpName);
         }
         // not implemented yet
