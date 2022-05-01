@@ -9,6 +9,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 public class IrGenerator {
     private final CancellableWriter writer;
@@ -17,6 +18,7 @@ public class IrGenerator {
     private FunctionSymbol curFunction;
     // IR code for current function
     private StringWriter funcIr;
+    private final StringWriter staticIr;
     // common scope for whole function
     private ArrayList<NakedVariable> funcVariables;
     private ArrayList<NakedVariable> funcParams;
@@ -26,6 +28,7 @@ public class IrGenerator {
     public IrGenerator(CancellableWriter writer) {
         this.writer = writer;
         this.labelCounter = 0;
+        this.staticIr = new StringWriter(0);
     }
 
     private String mangledName(NakedVariable v) {
@@ -84,17 +87,17 @@ public class IrGenerator {
     // Word immediate means same as numeric constant
     public void emitAssignImmediate(NakedVariable target, Integer imm) {
         if(target.typeStructure.isArray()) {
-            funcIr.write(String.format("assign, %s, %d, %d\n", mangledName(target), target.typeStructure.arraySize, imm));
+            Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d, %d\n", mangledName(target), target.typeStructure.arraySize, imm));
         } else {
-            funcIr.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
+            Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d,\n", mangledName(target), imm));
         }
     }
 
     public void emitAssignImmediate(NakedVariable target, Float imm) {
         if(target.typeStructure.isArray()) {
-            funcIr.write(String.format("assign, %s, %d, %f\n", mangledName(target), target.typeStructure.arraySize, imm));
+            Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d, %f\n", mangledName(target), target.typeStructure.arraySize, imm));
         } else {
-            funcIr.write(String.format("assign, %s, %f,\n", mangledName(target), imm));
+            Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %f,\n", mangledName(target), imm));
         }
     }
 
@@ -206,6 +209,9 @@ public class IrGenerator {
         writer.write(String.format("\t%s:\n", curFunction.name));
 
         writer.write("\t");
+        if(curFunction.name.equals("main")){
+            writer.write(staticIr.toString().replace("\n", "\n\t"));
+        }
         writer.write(funcIr.toString().replace("\n", "\n\t"));
         writer.write("return,,,\n");
 

@@ -5,8 +5,8 @@ let
     type dogList = array[10] of float;
     static arr : catList;
     static arr1 : catList;
-    static arr2 : dogList;
-    static x : int ;
+    static arr2 : dogList := 100.0;
+    static x : int := 0;
     static t : int ;
 begin
     function main (x: int) : int
