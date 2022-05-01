@@ -14,6 +14,8 @@ public class SemanticChecker {
     IrGenerator ir;
     SemanticErrorLogger errorLogger;
     String afterCurLoopLabel;
+    FunctionSymbol curFunc;
+    boolean didReturn;
 
     public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter, SemanticErrorLogger errorLogger) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
@@ -96,8 +98,13 @@ public class SemanticChecker {
                 }
             }
             ir.startFunction(funcSymbol, symbolTable.curScopeName());
+            curFunc = funcSymbol;
+            didReturn = false;
             visitStatSeq(ctx.stat_seq());
             ir.addVariablesFromScope(symbolTable.getNakedVariables());
+            if(!didReturn){
+                errorLogger.log(new SemanticException("There must be at least one `return` in function", ctx.CLOSEPAREN().getSymbol()));
+            }
             symbolTable.dropScope();
             ir.endFunction();
         }
@@ -228,6 +235,34 @@ public class SemanticChecker {
             visitStatSeq(ctx.stat_seq(0));
             ir.emitLabel(falseLabel);
         }
+
+        // RETURN optreturn SEMICOLON
+        if(ctx.RETURN() != null) {
+            didReturn=true;
+            if(ctx.optreturn().expr() == null){
+                if(curFunc.returnType != null){
+                    errorLogger.log(new SemanticException("Incorrect return type", ctx.RETURN().getSymbol()));
+                    return;
+                }
+                ir.emitReturn(null);
+            } else {
+                if(curFunc.returnType == null){
+                    errorLogger.log(new SemanticException("Incorrect return type", ctx.RETURN().getSymbol()));
+                    return;
+                }
+
+                NakedVariable retVal = generateExpr(ctx.optreturn().expr());
+                if(retVal == null){
+                    return;
+                }
+                if(!curFunc.returnType.typeStructure().isSame(retVal.typeStructure)) {
+                    errorLogger.log(new SemanticException("Incorrect return type", ctx.RETURN().getSymbol()));
+                    return;
+                }
+                ir.emitReturn(retVal);
+            }
+        }
+
         // stat: WHILE expr DO stat_seq ENDDO SEMICOLON
         if (ctx.WHILE() != null) {
             String whileLabel = ir.newUniqueLabel("while");

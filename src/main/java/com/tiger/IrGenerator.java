@@ -226,6 +226,13 @@ public class IrGenerator {
         writer.write(String.format("end_function %s\n\n", curFunction.name));
     }
 
+    public void emitReturn(NakedVariable retVal) {
+        if(retVal == null){
+            funcIr.write("return , , ,");
+        } else {
+            funcIr.write(String.format("return, %s, ,", mangledName(retVal)));
+        }
+    }
     private String callArgs(ArrayList<NakedVariable> args) {
         StringBuilder argsir = new StringBuilder();
         for (NakedVariable arg : args) {
