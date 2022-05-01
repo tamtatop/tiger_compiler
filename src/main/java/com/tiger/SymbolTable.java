@@ -111,6 +111,7 @@ public class SymbolTable implements ISymbolTable {
         if (symbol.getSymbolKind() == SymbolKind.FUNCTION || symbol.getSymbolKind() == SymbolKind.TYPE) {
             return null;
         }
+        // FIXME: scope is incorrect
         return new NakedVariable(name, curScopeName(), symbol.getSymbolType().typeStructure());
     }
 }

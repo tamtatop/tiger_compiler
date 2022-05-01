@@ -6,6 +6,7 @@ import com.tiger.symbols.*;
 import com.tiger.types.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -13,13 +14,15 @@ import static java.lang.Integer.parseInt;
 
 class IrGenerator {
     CancellableWriter writer;
+    private int labelCounter;
 
     public IrGenerator(CancellableWriter writer) {
         this.writer = writer;
+        this.labelCounter = 0;
     }
 
     private String mangledName(NakedVariable v) {
-        if(v.scopeName == null){
+        if (v.scopeName == null) {
             return "_" + v.name;
         } else {
             return "_" + v.scopeName + "_" + v.name;
@@ -29,8 +32,8 @@ class IrGenerator {
     private String generateSpecificTypeVariablesNames(List<NakedVariable> variables, BaseType desiredType) {
         StringBuilder names = new StringBuilder();
         for (NakedVariable variable : variables) {
-            if(variable.typeStructure.base == desiredType) {
-                if(variable.typeStructure.isArray()) {
+            if (variable.typeStructure.base == desiredType) {
+                if (variable.typeStructure.isArray()) {
                     names.append(String.format(" %s[%d],",
                             mangledName(variable),
                             variable.typeStructure.arraySize));
@@ -39,19 +42,19 @@ class IrGenerator {
                 }
             }
         }
-        if(names.isEmpty()) {
+        if (names.isEmpty()) {
             return names.toString();
         } else {
-            return names.substring(0, names.length()-1);
+            return names.substring(0, names.length() - 1);
         }
     }
 
 
     private void generateVariableLists(String prefix, List<NakedVariable> variables) {
-        writer.write(prefix+"int-list:");
+        writer.write(prefix + "int-list:");
         writer.write(generateSpecificTypeVariablesNames(variables, BaseType.INT));
         writer.write("\n");
-        writer.write(prefix+"float-list: ");
+        writer.write(prefix + "float-list: ");
         writer.write(generateSpecificTypeVariablesNames(variables, BaseType.FLOAT));
         writer.write("\n");
     }
@@ -63,7 +66,7 @@ class IrGenerator {
 
 
     public void emitAssign(Value target, NakedVariable source) {
-        if(target.array_idx == null){
+        if (target.array_idx == null) {
             writer.write(String.format("assign, %s, %s,\n", mangledName(target.variable), mangledName(source)));
         } else {
             // TODO: implement array assignement
@@ -76,6 +79,51 @@ class IrGenerator {
         writer.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
     }
 
+    private static final HashMap<String, String> opToIrOp = new HashMap<>();
+    private static final HashMap<String, String> cmpOp = new HashMap<>();
+
+    static {
+        opToIrOp.put("+", "add");
+        opToIrOp.put("-", "sub");
+        opToIrOp.put("*", "mult");
+        opToIrOp.put("/", "div");
+        opToIrOp.put("&", "and");
+        opToIrOp.put("|", "or");
+
+        cmpOp.put("==", "breq");
+        cmpOp.put("!=", "brneq");
+        cmpOp.put("<", "brlt");
+        cmpOp.put(">", "brgt");
+        cmpOp.put("<=", "brleq");
+        cmpOp.put(">=", "brgeq");
+    }
+
+    public void emitBinaryOp(NakedVariable left, NakedVariable right, NakedVariable target, String op) {
+        if (opToIrOp.containsKey(op)) {
+            writer.write(String.format("%s, %s, %s, %s\n", opToIrOp.get(op), mangledName(left), mangledName(right), mangledName(target)));
+        }
+        if(cmpOp.containsKey(op)){
+            // target = 1
+            // breq left, right, skip:
+            // target = 0
+            // skip:
+            // ...
+            String skipLabel = newUniqueLabel("cmp-op");
+            emitAssignImmediate(target, 1);
+            writer.write(String.format("%s, %s, %s, %s\n", cmpOp.get(op), mangledName(left), mangledName(right), skipLabel));
+            emitAssignImmediate(target, 0);
+            emitLabel(skipLabel);
+        }
+    }
+
+    public String newUniqueLabel(String prefix) {
+        labelCounter+=1;
+        return String.format("_%s-%d", prefix, labelCounter);
+    }
+
+    public void emitLabel(String label) {
+        writer.write(String.format("%s:\n", label));
+    }
 
 //
 //    public startFunction() {
@@ -148,14 +196,14 @@ public class SemanticChecker {
             }
             try {
                 symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
-            } catch (SymbolTableDuplicateKeyException e){
+            } catch (SymbolTableDuplicateKeyException e) {
                 throw new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
             }
         } else {
             // actually recurse into body of the function here.
             symbolTable.createScope();
-            FunctionSymbol funcSymbol = (FunctionSymbol)symbolTable.getSymbol(ctx.ID().getText());
-            for (Symbol param: funcSymbol.params) {
+            FunctionSymbol funcSymbol = (FunctionSymbol) symbolTable.getSymbol(ctx.ID().getText());
+            for (Symbol param : funcSymbol.params) {
                 try {
                     symbolTable.insertSymbol(param);
                 } catch (SymbolTableDuplicateKeyException e) {
@@ -179,7 +227,7 @@ public class SemanticChecker {
         // TODO: Handle case where symbol does not exist
         NakedVariable variable = symbolTable.getNaked(ctx.ID().getText());
         NakedVariable idx = null;
-        if(ctx.value_tail().expr()!=null){
+        if (ctx.value_tail().expr() != null) {
             idx = generateExpr(ctx.value_tail().expr());
         }
         // TODO: if idx!=null check that variable is actually an array
@@ -194,26 +242,76 @@ public class SemanticChecker {
             symbolTable.dropScope();
         }
         // value ASSIGN expr SEMICOLON
-        if(ctx.value() != null){
+        if (ctx.value() != null) {
             NakedVariable variable = generateExpr(ctx.expr(0));
             ir.emitAssign(getValue(ctx.value()), variable);
         }
     }
 
 
-
     // let x=y;
     public NakedVariable generateExpr(TigerParser.ExprContext ctx) {
-        if(ctx.value() != null){
+        // expr: value
+        if (ctx.value() != null) {
             return getValue(ctx.value()).variable; // FIXME: wrong for array value
         }
-        if(ctx.numeric_const() != null){
+
+        // expr: OPENPAREN expr CLOSEPAREN;
+        if (ctx.OPENPAREN() != null) {
+            return generateExpr(ctx.expr(0));
+        }
+        String tmpName = symbolTable.generateTemporary(BaseType.INT);
+        // expr: numeric_const
+        if (ctx.numeric_const() != null) {
             // FIXME: implement floats
-            String tmpName = symbolTable.generateTemporary(BaseType.INT);
             ir.emitAssignImmediate(symbolTable.getNaked(tmpName), parseInt(ctx.numeric_const().getText()));
             return symbolTable.getNaked(tmpName);
         }
-        // not implemented yet
+
+        // expr: <assoc=right> expr POW expr
+
+        // expr: expr mult_div_operator expr
+        if (ctx.mult_div_operator() != null) {
+            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
+                    generateExpr(ctx.expr(1)),
+                    symbolTable.getNaked(tmpName),
+                    ctx.mult_div_operator().getText());
+            return symbolTable.getNaked(tmpName);
+        }
+        // expr: expr plus_minus_operator expr
+        if (ctx.plus_minus_operator() != null) {
+            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
+                    generateExpr(ctx.expr(1)),
+                    symbolTable.getNaked(tmpName),
+                    ctx.plus_minus_operator().getText());
+            return symbolTable.getNaked(tmpName);
+        }
+        // expr: expr comparison_operator expr
+        if (ctx.comparison_operator() != null) {
+            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
+                    generateExpr(ctx.expr(1)),
+                    symbolTable.getNaked(tmpName),
+                    ctx.comparison_operator().getText());
+            return symbolTable.getNaked(tmpName);
+        }
+
+        // expr: expr AND expr
+        if (ctx.AND() != null) {
+            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
+                    generateExpr(ctx.expr(1)),
+                    symbolTable.getNaked(tmpName),
+                    ctx.AND().getText());
+            return symbolTable.getNaked(tmpName);
+        }
+        // expr: expr OR expr
+        if (ctx.OR() != null) {
+            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
+                    generateExpr(ctx.expr(1)),
+                    symbolTable.getNaked(tmpName),
+                    ctx.OR().getText());
+            return symbolTable.getNaked(tmpName);
+        }
+
         return null;
     }
 
@@ -250,7 +348,7 @@ public class SemanticChecker {
             String name = idCtx.ID().getText();
             try {
                 symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
-            } catch (SymbolTableDuplicateKeyException e){
+            } catch (SymbolTableDuplicateKeyException e) {
                 throw new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol());
             }
             idCtx = idCtx.id_list();
@@ -288,7 +386,7 @@ public class SemanticChecker {
 
                 symbol = parseParam(cur.param());
                 name = symbol.getName();
-                if(argNames.contains(name)){
+                if (argNames.contains(name)) {
                     throw new SemanticException(String.format("duplicate parameter %s", name), cur.param().start);
                 }
                 argNames.add(name);
@@ -323,8 +421,8 @@ public class SemanticChecker {
         if (ctx.ID() != null) {
             String typeName = ctx.ID().getText();
             Symbol symbol = symbolTable.getSymbol(typeName);
-            if(symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE){
-                throw new SemanticException(String.format("Type %s does not exist",typeName), ctx.ID().getSymbol());
+            if (symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE) {
+                throw new SemanticException(String.format("Type %s does not exist", typeName), ctx.ID().getSymbol());
             }
             return new CustomType(typeName, symbol.getSymbolType().typeStructure());
         }
