@@ -126,13 +126,33 @@ public class SemanticChecker {
         }
         // value ASSIGN expr SEMICOLON
         if (ctx.value() != null) {
-            // TODO: handle array assignment case.
-            NakedVariable result = generateExpr(ctx.expr(0));
-            if (result == null) { // ok?
-                return;
-            }
             Value lvalue = getValue(ctx.value());
             if (lvalue == null) {
+                return;
+            }
+            // TODO: this does not support arr1 := (arr2)
+            if(lvalue.variable.typeStructure.isArray() && lvalue.array_idx == null) {
+                if(ctx.expr(0).value()==null){
+                    errorLogger.log(new SemanticException("Can't assign unit value to array", ctx.ASSIGN().getSymbol()));
+                    return;
+                }
+
+                Value rvalue = getValue(ctx.expr(0).value());
+                if(lvalue.variable.typeStructure.isSame(rvalue.variable.typeStructure)) {
+                    if(rvalue.array_idx != null) {
+                        errorLogger.log(new SemanticException("Can't assign unit value to array", ctx.ASSIGN().getSymbol()));
+                        return;
+                    }
+                    ir.emitAssign(lvalue, rvalue.variable);
+                } else {
+                    errorLogger.log(new SemanticException("assignment left value type structure is not same as right value", ctx.start));
+                    return;
+                }
+                return;
+            }
+
+            NakedVariable result = generateExpr(ctx.expr(0));
+            if (result == null) { // ok?
                 return;
             }
             if (lvalue.variable.typeStructure.base == BaseType.INT && result.typeStructure.base == BaseType.FLOAT) {
@@ -182,6 +202,10 @@ public class SemanticChecker {
         if (ctx.value() != null) {
             Value value = getValue(ctx.value());
             if(value.array_idx == null){
+                if(value.variable.typeStructure.isArray()) {
+                    errorLogger.log(new SemanticException("Can't do binary operations on arrays", ctx.value().start));
+                    return null;
+                }
                 return value.variable;
             } else {
                 String tmpName = symbolTable.generateTemporary(value.variable.typeStructure.base);

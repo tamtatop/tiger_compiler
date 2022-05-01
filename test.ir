@@ -1,5 +1,5 @@
 start_program sort
-	static-int-list: _0_arr[8], _0_t, _0_x
+	static-int-list: _0_arr[8], _0_t, _0_x, _0_arr2[8], _0_arr1[8]
 	static-float-list: 
 
 start_function main
@@ -10,6 +10,9 @@ start_function main
 	assign, _0_t, _2_x,
 	assign, _0_t, _3_x,
 	array_store, _0_arr, _1_x, _0_t
+	assign, _0_arr, _0_arr1,
+	assign, _0_arr, _0_arr1,
+	assign, _0_arr2, _0_arr1,
 	return,,,
 end_function main
 

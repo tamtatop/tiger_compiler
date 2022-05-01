@@ -2,7 +2,10 @@
 program sort
 let
     type catList = array[8] of int;
+    type dogList = array[10] of int;
     static arr : catList;
+    static arr1 : catList;
+    static arr2 : dogList;
     static x : int ;
     static t : int ;
 begin
@@ -19,5 +22,9 @@ begin
             t:=x;
         end
         arr[x] := t;
+        arr := arr1;
+        arr := arr1;
+
+        arr2 := 1+10;
     end
 end
