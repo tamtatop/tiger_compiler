@@ -1,37 +1,18 @@
-/* selection sort */
-program sort
+program err_func_return_array
 let
-    type catList = array[8] of int;
-    type dogList = array[10] of float;
-    static arr : catList;
-    static arr1 : catList;
-    static arr2 : dogList := 100.0;
-    static x : int := 0;
-    static t : int ;
-begin
-    function main (x: int) : int
-    begin
-        let
-            var x: int := 10;
-            var y: dogList := 100.0;
-        begin
-            t:=x;
-        end
-        let
-            var x: int;
-        begin
-            t:=x;
-            x := 5;
-            while (x > 0) do
-                printi(x);
-                if (x == 3) then
-                    break;
-                endif;
-                x := x-1;
-            enddo;
-        end
-        arr[x] := t;
-        arr := arr1;
+    type intArray = array[10] of int;
 
+    static x: int;
+
+begin
+
+
+    function main(): int
+    begin
+        x := 3**5;
+        return 0;
     end
+
 end
+
+/*Semantic Error: function return array type*/

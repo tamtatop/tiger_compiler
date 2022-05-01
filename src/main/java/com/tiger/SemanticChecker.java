@@ -516,10 +516,19 @@ public class SemanticChecker {
 
         assert tmpType != null;
         String tmpName = symbolTable.generateTemporary(tmpType);
-        ir.emitBinaryOp(left,
-                right,
-                symbolTable.getNaked(tmpName),
-                ctx.getChild(1).getText());
+        if(ctx.POW() != null){
+            String itmp = symbolTable.generateTemporary(BaseType.INT);
+            ir.emitPow(left,
+                    right,
+                    symbolTable.getNaked(tmpName),
+                    symbolTable.getNaked(itmp));
+
+        } else {
+            ir.emitBinaryOp(left,
+                    right,
+                    symbolTable.getNaked(tmpName),
+                    ctx.getChild(1).getText());
+        }
 
         return symbolTable.getNaked(tmpName);
     }

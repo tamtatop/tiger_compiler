@@ -1,42 +1,24 @@
-start_program sort
-	static-int-list: _0_arr[8], _0_t, _0_x, _0_arr1[8]
-	static-float-list:  _0_arr2[10]
+start_program err_func_return_array
+	static-int-list: _0_x
+	static-float-list: 
 
 start_function main
-	int main(int _1_x)
-	int-list: _2_x, _3_x, _3_tmp_5, _3_tmp_4, _3_tmp_6, _3_tmp_1, _3_tmp_0, _3_tmp_3, _3_tmp_2, _1_x
-	float-list:  _2_y[10]
+	int main()
+	int-list: _1_tmp_4, _1_tmp_1, _1_tmp_0, _1_tmp_3, _1_tmp_2
+	float-list: 
 	main:
-	assign, _0_arr2, 10, 100.000000
-	assign, _0_x, 0,
-	assign, _2_x, 10,
-	assign, _2_y, 10, 100.000000
-	assign, _0_t, _2_x,
-	assign, _0_t, _3_x,
-	assign, _3_tmp_0, 5,
-	assign, _3_x, _3_tmp_0,
-	_while_1:
-	assign, _3_tmp_1, 0,
-	assign, _3_tmp_2, 1,
-	brgt, _3_x, _3_tmp_1, _cmp_op_3
-	assign, _3_tmp_2, 0,
-	_cmp_op_3:
-	brneq, _3_tmp_2, 0, _after_while_2
-	assign, _3_tmp_3, 3,
-	assign, _3_tmp_4, 1,
-	breq, _3_x, _3_tmp_3, _cmp_op_4
-	assign, _3_tmp_4, 0,
-	_cmp_op_4:
-	brneq, _3_tmp_4, 0, _if_false_do_this_5
-	goto, _after_while_2, ,
-	_if_false_do_this_5:
-	assign, _3_tmp_5, 1,
-	sub, _3_x, _3_tmp_5, _3_tmp_6
-	assign, _3_x, _3_tmp_6,
-	goto, _while_1, ,
-	_after_while_2:
-	array_store, _0_arr, _1_x, _0_t
-	assign, _0_arr, _0_arr1,
-	return,,,
+	assign, _1_tmp_0, 3,
+	assign, _1_tmp_1, 5,
+	assign, _1_tmp_3, 0,
+	assign, _1_tmp_2, 1,
+	_pow_1:
+	brgeq, _1_tmp_3, _1_tmp_1, _after_pow_2
+	mult, _1_tmp_2, _1_tmp_0, _1_tmp_2
+	add, _1_tmp_3, 1, _1_tmp_3
+	goto, _pow_1, ,
+	_after_pow_2:
+	assign, _0_x, _1_tmp_2,
+	assign, _1_tmp_4, 0,
+	return, _1_tmp_4, ,return , , , 
 end_function main
 
