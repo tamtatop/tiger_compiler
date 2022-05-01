@@ -483,7 +483,7 @@ public class SemanticChecker {
                 errorLogger.log(new SemanticException("The right operand for ** must be an integer", ctx.POW().getSymbol()));
                 return null;
             }
-            tmpType = BaseType.INT; // pow is always int
+            tmpType = left.typeStructure.base; // pow is always int
         }
 
         // expr: expr mult_div_operator expr
@@ -499,10 +499,10 @@ public class SemanticChecker {
 
         // expr: expr comparison_operator expr
         if (ctx.comparison_operator() != null) {
-//            if(left.typeStructure.base != right.typeStructure.base) {
-//                errorLogger.log(new SemanticException("Comparison operators take operands which may be either both integer or both float", ctx.comparison_operator().start));
-//                return null;
-//            }
+            if(left.typeStructure.base != right.typeStructure.base) {
+                errorLogger.log(new SemanticException("Comparison operators take operands which may be either both integer or both float", ctx.comparison_operator().start));
+                return null;
+            }
             if(ctx.expr(0).comparison_operator() != null || ctx.expr(1).comparison_operator() != null){
                 errorLogger.log(new SemanticException("Comparison operators do not associate, for example, a==b==c is a semantic error", ctx.comparison_operator().start));
                 return null;
