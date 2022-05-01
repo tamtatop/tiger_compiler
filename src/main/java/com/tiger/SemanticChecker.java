@@ -173,7 +173,7 @@ public class SemanticChecker {
             String afterIf = ir.newUniqueLabel("after_if_do_this");
             String falseLabel = ir.newUniqueLabel("if_false_do_this");
             if (result != null) {
-                if (result.typeStructure.base == BaseType.INT) {
+                if (result.typeStructure.base == BaseType.FLOAT) {
                     errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
                 } else {
                     ir.emitIfCondition(result, falseLabel);
@@ -196,7 +196,7 @@ public class SemanticChecker {
             NakedVariable result = generateExpr(ctx.expr(0));
             String falseLabel = ir.newUniqueLabel("if_false_do_this");
             if (result != null) {
-                if (result.typeStructure.base == BaseType.INT) {
+                if (result.typeStructure.base == BaseType.FLOAT) {
                     errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
                 } else {
                     ir.emitIfCondition(result, falseLabel);
@@ -216,8 +216,8 @@ public class SemanticChecker {
             ir.emitLabel(whileLabel);
             NakedVariable result = generateExpr(ctx.expr(0));
             if (result != null) {
-                if (result.typeStructure.base == BaseType.INT) {
-                    errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
+                if (result.typeStructure.base == BaseType.FLOAT) {
+                    errorLogger.log(new SemanticException("'while' can't have FLOAT in condition", ctx.expr(0).start));
                 } else {
                     ir.emitIfCondition(result, afterWhile);
                 }
@@ -389,14 +389,14 @@ public class SemanticChecker {
         if(symbolType == null){
             return;
         }
-        if(symbolType.typeStructure().isArray()) {
+        if(symbolType.getKind() == TypeKind.ARRAY) {
             errorLogger.log(new SemanticException("can't declare arrays directly", ctx.type().getStart()));
             return;
         }
-        if(isRoot && ctx.optional_init().numeric_const() != null) {
-            errorLogger.log(new SemanticException("can't initialize static variable", ctx.optional_init().getStart()));
-            return;
-        }
+//        if(isRoot && ctx.optional_init().numeric_const() != null) {
+//            errorLogger.log(new SemanticException("can't initialize static variable", ctx.optional_init().getStart()));
+//            return;
+//        }
         Integer intVal = null;
         Float floatVal = null;
         if(ctx.optional_init().ASSIGN() != null){
@@ -421,7 +421,7 @@ public class SemanticChecker {
                     ir.emitAssignImmediate(symbolTable.getNaked(name), intVal);
                 }
                 if(floatVal!=null){
-                    ir.emitAssignImmediate(symbolTable.getNaked(name), intVal);
+                    ir.emitAssignImmediate(symbolTable.getNaked(name), floatVal);
                 }
             } catch (SymbolTableDuplicateKeyException e) {
                 errorLogger.log(new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol()));
