@@ -37,7 +37,10 @@ public class SymbolTable implements ISymbolTable {
         HashMap<String, Symbol> scope = symbolTable.peek();
         scope.put(symbol.getName(), symbol);
 
-        writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
+        if(symbol.getSymbolKind() != SymbolKind.TEMP) {
+            // do not write out temp variables
+            writer.write(String.format("%s%s\n", "\t".repeat(symbolTable.size()), symbol.format()));
+        }
     }
 
     public boolean currentScopeContains(String name) {
