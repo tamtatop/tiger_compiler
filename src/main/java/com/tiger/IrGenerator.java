@@ -152,9 +152,34 @@ public class IrGenerator {
             emitAssignImmediate(target, 0);
             emitLabel(skipLabel);
         }
+        // stat: FOR ID ASSIGN expr TO expr DO stat_seq ENDDO SEMICOLON
     }
 
-    // i = i+1
+    public void emitPow(NakedVariable left, NakedVariable right, NakedVariable target, NakedVariable i) {
+        // assign, i, 0,
+        // assign, target, 1,
+        // pow:
+        // brgeq i, right, after_pow
+        // mult, target, left, target
+        // add, i, 1, i
+        // goto pow:
+        // after_pow:
+        String powLabel = newUniqueLabel("pow");
+        String afterPow = newUniqueLabel("after_pow");
+
+        emitAssignImmediate(i, 0);
+        emitAssignImmediate(target, 1);
+        emitLabel(powLabel);
+        emitForCondition(i, right, afterPow);
+        emitBinaryOp(target, left, target, "*");
+        emitVariableIncrement(i);
+        emitGoto(powLabel);
+        emitLabel(afterPow);
+    }
+
+
+
+        // i = i+1
     public void emitVariableIncrement(NakedVariable var){
         funcIr.write(String.format("add, %s, 1, %s\n", mangledName(var), mangledName(var)));
     }
