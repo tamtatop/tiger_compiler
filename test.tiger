@@ -2,7 +2,7 @@
 program sort
 let
     type catList = array[8] of int;
-    type dogList = array[10] of int;
+    type dogList = array[10] of float;
     static arr : catList;
     static arr1 : catList;
     static arr2 : dogList;
@@ -12,7 +12,8 @@ begin
     function main (x: int) : int
     begin
         let
-            var x: int;
+            var x: int := 10;
+            var y: dogList := 100.0;
         begin
             t:=x;
         end
@@ -23,8 +24,6 @@ begin
         end
         arr[x] := t;
         arr := arr1;
-        arr := arr1;
 
-        arr2 := 1+10;
     end
 end

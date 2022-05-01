@@ -83,11 +83,19 @@ public class IrGenerator {
 
     // Word immediate means same as numeric constant
     public void emitAssignImmediate(NakedVariable target, Integer imm) {
-        funcIr.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
+        if(target.typeStructure.isArray()) {
+            funcIr.write(String.format("assign, %s, %d, %d\n", mangledName(target), target.typeStructure.arraySize, imm));
+        } else {
+            funcIr.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
+        }
     }
 
     public void emitAssignImmediate(NakedVariable target, Float imm) {
-        funcIr.write(String.format("assign, %s, %f,\n", mangledName(target), imm));
+        if(target.typeStructure.isArray()) {
+            funcIr.write(String.format("assign, %s, %d, %f\n", mangledName(target), target.typeStructure.arraySize, imm));
+        } else {
+            funcIr.write(String.format("assign, %s, %f,\n", mangledName(target), imm));
+        }
     }
 
     public void emitGoto(String label) {

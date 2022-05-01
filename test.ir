@@ -1,18 +1,18 @@
 start_program sort
-	static-int-list: _0_arr[8], _0_t, _0_x, _0_arr2[8], _0_arr1[8]
-	static-float-list: 
+	static-int-list: _0_arr[8], _0_t, _0_x, _0_arr1[8]
+	static-float-list:  _0_arr2[10]
 
 start_function main
 	int main(int _1_x)
 	int-list: _2_x, _3_x, _1_x
-	float-list: 
+	float-list:  _2_y[10]
 	main:
+	assign, _2_x, 10,
+	assign, _2_y, 10, null
 	assign, _0_t, _2_x,
 	assign, _0_t, _3_x,
 	array_store, _0_arr, _1_x, _0_t
 	assign, _0_arr, _0_arr1,
-	assign, _0_arr, _0_arr1,
-	assign, _0_arr2, _0_arr1,
 	return,,,
 end_function main
 
