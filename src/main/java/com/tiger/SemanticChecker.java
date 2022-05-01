@@ -167,7 +167,11 @@ public class SemanticChecker {
             String afterIf = ir.newUniqueLabel("after_if_do_this");
             String falseLabel = ir.newUniqueLabel("if_false_do_this");
             if (result != null) {
-                ir.emitIfCondition(result, falseLabel);
+                if (result.typeStructure.base == BaseType.INT) {
+                    errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
+                } else {
+                    ir.emitIfCondition(result, falseLabel);
+                }
             }
             visitStatSeq(ctx.stat_seq(0));
             ir.emitGoto(afterIf);
@@ -186,8 +190,13 @@ public class SemanticChecker {
             NakedVariable result = generateExpr(ctx.expr(0));
             String falseLabel = ir.newUniqueLabel("if_false_do_this");
             if (result != null) {
-                ir.emitIfCondition(result, falseLabel);
+                if (result.typeStructure.base == BaseType.INT) {
+                    errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
+                } else {
+                    ir.emitIfCondition(result, falseLabel);
+                }
             }
+
             visitStatSeq(ctx.stat_seq(0));
             ir.emitLabel(falseLabel);
         }
@@ -201,7 +210,11 @@ public class SemanticChecker {
             ir.emitLabel(whileLabel);
             NakedVariable result = generateExpr(ctx.expr(0));
             if (result != null) {
-                ir.emitIfCondition(result, afterWhile);
+                if (result.typeStructure.base == BaseType.INT) {
+                    errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
+                } else {
+                    ir.emitIfCondition(result, afterWhile);
+                }
             }
             visitStatSeq(ctx.stat_seq(0));
             ir.emitGoto(whileLabel);
@@ -216,8 +229,20 @@ public class SemanticChecker {
 
             afterCurLoopLabel = prevLoopLabel;
         }
+        // stat: FOR ID ASSIGN expr TO expr DO stat_seq ENDDO SEMICOLON
+        if (ctx.FOR() != null) {
+            String afterFor = ir.newUniqueLabel("after_for");
+            String prevLoopLabel = afterCurLoopLabel;
+            afterCurLoopLabel = afterFor;
 
-//        if()
+            // for:
+            // expr1 code
+            // expr2 code
+            // brgeq expr1, expr2, after_for
+            //
+
+            afterCurLoopLabel = prevLoopLabel;
+        }
 
         if (ctx.BREAK() != null) {
             if (afterCurLoopLabel == null) {
