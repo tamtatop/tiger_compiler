@@ -288,8 +288,7 @@ public class SemanticChecker {
         assert left.typeStructure.arraySize == 0;
         assert right.typeStructure.arraySize == 0;
 
-        // TODO: fix this type
-        String tmpName = symbolTable.generateTemporary(BaseType.INT);
+        BaseType tmpType = null;
 
         // expr: <assoc=right> expr POW expr
         if(ctx.POW() != null){
@@ -297,14 +296,20 @@ public class SemanticChecker {
                 errorLogger.log(new SemanticException("The right operand for ** must be an integer", ctx.POW().getSymbol()));
                 return null;
             }
+            tmpType = BaseType.INT; // pow is always int
         }
 
         // expr: expr mult_div_operator expr
-        if (ctx.mult_div_operator() != null) {
-        }
         // expr: expr plus_minus_operator expr
-        if (ctx.plus_minus_operator() != null) {
+        if (ctx.mult_div_operator() != null || ctx.plus_minus_operator() != null) {
+            // if left or right is float result is float.
+            if(left.typeStructure.base == BaseType.FLOAT || right.typeStructure.base == BaseType.FLOAT){
+                tmpType = BaseType.FLOAT;
+            } else {
+                tmpType = BaseType.INT;
+            }
         }
+
         // expr: expr comparison_operator expr
         if (ctx.comparison_operator() != null) {
             if(left.typeStructure.base != right.typeStructure.base) {
@@ -315,15 +320,17 @@ public class SemanticChecker {
                 errorLogger.log(new SemanticException("Comparison operators do not associate, for example, a==b==c is a semantic error", ctx.comparison_operator().start));
                 return null; // TODO: we can stop evaluating right?
             }
+            tmpType = BaseType.INT;
         }
 
         // expr: expr AND expr
-        if (ctx.AND() != null) {
-        }
         // expr: expr OR expr
-        if (ctx.OR() != null) {
+        if (ctx.AND() != null || ctx.OR() != null) {
+            tmpType = BaseType.INT;
         }
 
+        assert tmpType != null;
+        String tmpName = symbolTable.generateTemporary(tmpType);
         ir.emitBinaryOp(left,
                 right,
                 symbolTable.getNaked(tmpName),
