@@ -233,15 +233,29 @@ public class SemanticChecker {
         }
     }
 
-    // TODO: create new struct Value or something instead of NakedVariable
     public Value getValue(TigerParser.ValueContext ctx) {
-        // TODO: Handle case where symbol does not exist
         NakedVariable variable = symbolTable.getNaked(ctx.ID().getText());
+        if(variable == null){
+            errorLogger.log(new SemanticException(
+                    String.format("variable %s not found", ctx.ID().getText()),
+                    ctx.ID().getSymbol()
+            ));
+            return null;
+        }
         NakedVariable idx = null;
         if (ctx.value_tail().expr() != null) {
             idx = generateExpr(ctx.value_tail().expr());
+            if(idx == null){
+                return null;
+            }
+            if(!variable.typeStructure.isArray()) {
+                errorLogger.log(new SemanticException(
+                        String.format("variable %s is not an array", ctx.ID().getText()),
+                        ctx.ID().getSymbol()
+                ));
+                return null;
+            }
         }
-        // TODO: if idx!=null check that variable is actually an array
         return new Value(variable, idx);
     }
 
@@ -254,15 +268,20 @@ public class SemanticChecker {
         }
         // value ASSIGN expr SEMICOLON
         if (ctx.value() != null) {
-            NakedVariable variable = generateExpr(ctx.expr(0));
-            if(variable == null){ // ok?
+            // TODO: handle array assignment case.
+            NakedVariable result = generateExpr(ctx.expr(0));
+            if(result == null){ // ok?
                 return;
             }
             Value lvalue = getValue(ctx.value());
             if(lvalue == null) {
                 return;
             }
-            ir.emitAssign(lvalue, variable);
+            if(lvalue.variable.typeStructure.base == BaseType.INT && result.typeStructure.base == BaseType.FLOAT) {
+                errorLogger.log(new SemanticException("Can't promote float to int", ctx.value().start));
+                return;
+            }
+            ir.emitAssign(lvalue, result);
         }
     }
 
@@ -468,6 +487,7 @@ public class SemanticChecker {
             if (symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE) {
                 errorLogger.log(new SemanticException(String.format("Type %s does not exist", typeName), ctx.ID().getSymbol()));
             }
+            assert symbol != null;
             return new CustomType(typeName, symbol.getSymbolType().typeStructure());
         }
         return switch (parseBaseType(ctx.base_type())) {
