@@ -63,7 +63,8 @@ public class SymbolTable implements ISymbolTable {
 
     @Override
     public Symbol getSymbol(String name) {
-        for (ScopeWithId scope : symbolTable) {
+        for (int i = symbolTable.size()-1; i >= 0; i--) {
+            ScopeWithId scope = symbolTable.get(i);
             if (scope.scope.containsKey(name)) {
                 return scope.scope.get(name);
             }
@@ -73,7 +74,8 @@ public class SymbolTable implements ISymbolTable {
 
     @Override
     public String getVariableScopeName(String name) {
-        for (ScopeWithId scope : symbolTable) {
+        for (int i = symbolTable.size()-1; i >= 0; i--) {
+            ScopeWithId scope = symbolTable.get(i);
             if (scope.scope.containsKey(name)) {
                 return String.valueOf(scope.scopeId);
             }
