@@ -13,6 +13,10 @@ public class TypeStructure  {
         return arraySize != 0;
     }
 
+    public boolean isBaseInt(){
+        return base == BaseType.INT && !isArray();
+    }
+
     public boolean isSame(TypeStructure other) {
         return this.base == other.base && this.arraySize == other.arraySize;
     }
