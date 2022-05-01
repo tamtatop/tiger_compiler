@@ -18,6 +18,8 @@ interface ISymbolTable {
 
     Symbol getSymbol(String name);
 
+    String getVariableScopeName(String name);
+
     void createScope();
 
     void dropScope();

@@ -217,8 +217,7 @@ public class SemanticChecker {
                 try {
                     symbolTable.insertSymbol(param);
                 } catch (SymbolTableDuplicateKeyException e) {
-                    // unreachable coz it's already checked
-                    // FIXME: it's reachable now since we are not exiting on error
+                    // we've already reported duplicate variable error, so we can ignore it now
                 }
             }
             visitStatSeq(ctx.stat_seq());
@@ -317,10 +316,9 @@ public class SemanticChecker {
             }
             return symbolTable.getNaked(tmpName);
         }
-        // TODO: Type check, POW operation, DRY code, a==b==c should be an error
+        // TODO: POW operation
         NakedVariable left = generateExpr(ctx.expr(0));
         NakedVariable right = generateExpr(ctx.expr(1));
-        // TODO: we can stop evaluating on errors right?
         if(left == null || right == null){
             return null;
         }
@@ -357,7 +355,7 @@ public class SemanticChecker {
             }
             if(ctx.expr(0).comparison_operator() != null || ctx.expr(1).comparison_operator() != null){
                 errorLogger.log(new SemanticException("Comparison operators do not associate, for example, a==b==c is a semantic error", ctx.comparison_operator().start));
-                return null; // TODO: we can stop evaluating right?
+                return null;
             }
             tmpType = BaseType.INT;
         }

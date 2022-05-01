@@ -7,7 +7,6 @@ import com.tiger.symbols.VariableSymbol;
 import com.tiger.types.BaseType;
 import com.tiger.types.FloatType;
 import com.tiger.types.IntType;
-import com.tiger.types.TypeStructure;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +62,18 @@ public class SymbolTable implements ISymbolTable {
     }
 
     @Override
+    public String getVariableScopeName(String name) {
+        for (int i = symbolTable.size()-1; i >= 0; i--) {
+            HashMap<String, Symbol> scope = symbolTable.get(i);
+            if (scope.containsKey(name)) {
+                return String.valueOf(i);
+            }
+        }
+        return null;
+    }
+
+
+    @Override
     public void createScope() {
         HashMap<String, Symbol> scope = new HashMap<>();
         symbolTable.push(scope);
@@ -92,7 +103,6 @@ public class SymbolTable implements ISymbolTable {
     public String generateTemporary(BaseType baseType) {
         String name = String.format("tmp_%d", tmp_counter);
         try {
-
             switch (baseType) {
                 case INT -> insertSymbol(new VariableSymbol(name, new IntType(), SymbolKind.TEMP));
                 case FLOAT -> insertSymbol(new VariableSymbol(name, new FloatType(), SymbolKind.TEMP));
@@ -106,7 +116,6 @@ public class SymbolTable implements ISymbolTable {
 
 
     public NakedVariable getNaked(String name) {
-        // TODO: handle these null cases
         Symbol symbol = getSymbol(name);
         if (symbol == null) {
             return null;
@@ -114,7 +123,6 @@ public class SymbolTable implements ISymbolTable {
         if (symbol.getSymbolKind() == SymbolKind.FUNCTION || symbol.getSymbolKind() == SymbolKind.TYPE) {
             return null;
         }
-        // FIXME: scope is incorrect
-        return new NakedVariable(name, curScopeName(), symbol.getSymbolType().typeStructure());
+        return new NakedVariable(name, getVariableScopeName(name), symbol.getSymbolType().typeStructure());
     }
 }

@@ -9,6 +9,7 @@ public interface Symbol {
 
     Type getSymbolType();
 
+
     default String format() {
         return String.format("%s, %s, %s", getName(), getSymbolKind().format(), getSymbolType().format());
     }
