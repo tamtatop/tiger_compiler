@@ -20,6 +20,9 @@ begin
             x := 5;
             while (x > 0) do
                 printi(x);
+                if (x == 3) then
+                    break;
+                endif;
                 x := x-1;
             enddo;
         end

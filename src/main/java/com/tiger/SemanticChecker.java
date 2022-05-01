@@ -5,10 +5,7 @@ import com.tiger.io.CancellableWriter;
 import com.tiger.symbols.*;
 import com.tiger.types.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.Integer.parseInt;
 
@@ -16,7 +13,7 @@ public class SemanticChecker {
     SymbolTable symbolTable;
     IrGenerator ir;
     SemanticErrorLogger errorLogger;
-
+    String after_cur_loop_label;
 
     public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter, SemanticErrorLogger errorLogger) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
@@ -178,6 +175,7 @@ public class SemanticChecker {
         if (ctx.WHILE() != null) {
             String whileLabel = ir.newUniqueLabel("while");
             String afterWhile = ir.newUniqueLabel("after_while");
+            after_cur_loop_label = afterWhile;
 
             ir.emitLabel(whileLabel);
             NakedVariable result = generateExpr(ctx.expr(0));
@@ -194,7 +192,21 @@ public class SemanticChecker {
             // stat_seq code
             // goto while
             // after_while:
+
+            after_cur_loop_label = null;
         }
+
+        if (ctx.BREAK() != null) {
+            if (after_cur_loop_label == null) {
+                errorLogger.log(new SemanticException("'break' isn't allowed from here", ctx.BREAK().getSymbol()));
+                return;
+            }
+            ir.emitGoto(after_cur_loop_label);
+        }
+
+
+
+
     }
 
     // let x=y;

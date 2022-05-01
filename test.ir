@@ -4,7 +4,7 @@ start_program sort
 
 start_function main
 	int main(int _1_x)
-	int-list: _2_x, _3_x, _3_tmp_4, _3_tmp_1, _3_tmp_0, _3_tmp_3, _3_tmp_2, _1_x
+	int-list: _2_x, _3_x, _3_tmp_5, _3_tmp_4, _3_tmp_6, _3_tmp_1, _3_tmp_0, _3_tmp_3, _3_tmp_2, _1_x
 	float-list: 
 	main:
 	assign, _0_t, _2_x,
@@ -18,9 +18,17 @@ start_function main
 	assign, _3_tmp_2, 0,
 	_cmp_op_3:
 	brneq, _3_tmp_2, 0, _after_while_2
-	assign, _3_tmp_3, 1,
-	sub, _3_x, _3_tmp_3, _3_tmp_4
-	assign, _3_x, _3_tmp_4,
+	assign, _3_tmp_3, 3,
+	assign, _3_tmp_4, 1,
+	breq, _3_x, _3_tmp_3, _cmp_op_4
+	assign, _3_tmp_4, 0,
+	_cmp_op_4:
+	brneq, _3_tmp_4, 0, _if_false_do_this_5
+	goto, _after_while_2, ,
+	_if_false_do_this_5:
+	assign, _3_tmp_5, 1,
+	sub, _3_x, _3_tmp_5, _3_tmp_6
+	assign, _3_x, _3_tmp_6,
 	goto, _while_1, ,
 	_after_while_2:
 	array_store, _0_arr, _1_x, _0_t
