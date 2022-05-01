@@ -564,27 +564,26 @@ public class SemanticChecker {
         ArrayList<Symbol> params = new ArrayList<>();
         HashSet<String> argNames = new HashSet<>();
         if (ctx.param() != null) {
-
+            String name;
             Symbol symbol = parseParam(ctx.param());
-            String name = symbol.getName();
-            argNames.add(name);
-            params.add(symbol);
-
+            if(symbol != null) {
+                name = symbol.getName();
+                argNames.add(name);
+                params.add(symbol);
+            }
             TigerParser.Param_list_tailContext cur = ctx.param_list_tail();
             while (cur.param() != null) {
 
                 symbol = parseParam(cur.param());
-                if(symbol == null){
-                    continue;
+                if(symbol != null) {
+                    name = symbol.getName();
+                    if (argNames.contains(name)) {
+                        errorLogger.log(new SemanticException(String.format("duplicate parameter %s", name), cur.param().start));
+                        continue;
+                    }
+                    argNames.add(name);
+                    params.add(symbol);
                 }
-                name = symbol.getName();
-                if (argNames.contains(name)) {
-                    errorLogger.log(new SemanticException(String.format("duplicate parameter %s", name), cur.param().start));
-                    continue;
-                }
-                argNames.add(name);
-                params.add(symbol);
-
                 cur = cur.param_list_tail();
             }
         }
