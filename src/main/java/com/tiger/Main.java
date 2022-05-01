@@ -65,20 +65,22 @@ public class Main {
         lexer.reset();
         generateGraph(lexer, parser, parserWriter);
 
+        SemanticErrorLogger errorLogger = new SemanticErrorLogger();
+
         // Experiments
         lexer.reset();
         parser.reset();
-        SemanticChecker semanticChecker = new SemanticChecker(symbolTableWriter, irWriter);
-        try {
-            semanticChecker.visitTigerProgram(parser.tiger_program());
-            symbolTableWriter.commit();
-            irWriter.commit();
-        } catch (SemanticException e) {
+        SemanticChecker semanticChecker = new SemanticChecker(symbolTableWriter, irWriter, errorLogger);
+
+        semanticChecker.visitTigerProgram(parser.tiger_program());
+
+        if(errorLogger.anyError()) {
             symbolTableWriter.cancel();
             irWriter.cancel();
-            System.err.printf("line %d:%d %s\n", e.line_number, e.column_number, e.message);
+            System.exit(4);
         }
-
+        symbolTableWriter.commit();
+        irWriter.commit();
     }
 
 

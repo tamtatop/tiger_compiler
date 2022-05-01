@@ -152,14 +152,16 @@ class IrGenerator {
 public class SemanticChecker {
     SymbolTable symbolTable;
     IrGenerator ir;
+    SemanticErrorLogger errorLogger;
 
 
-    public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter) {
+    public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter, SemanticErrorLogger errorLogger) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
         this.ir = new IrGenerator(irWriter);
+        this.errorLogger = errorLogger;
     }
 
-    public void visitTigerProgram(TigerParser.Tiger_programContext ctx) throws SemanticException {
+    public void visitTigerProgram(TigerParser.Tiger_programContext ctx) {
         symbolTable.createScope();
         // DO WORK BITCH
         System.out.printf("Hello program %s!\n", ctx.ID().getText());
@@ -174,7 +176,7 @@ public class SemanticChecker {
      * @param parseBody For first pass we only want to put function symbols in symbol tables.
      *                  We don't want to parse bodies of functions.
      */
-    public void visitFunctionList(TigerParser.Funct_listContext ctx, boolean parseBody) throws SemanticException {
+    public void visitFunctionList(TigerParser.Funct_listContext ctx, boolean parseBody) {
         if (ctx.funct() == null) {
             return;
         }
@@ -188,16 +190,16 @@ public class SemanticChecker {
      * @param parseBody For first pass we only want to put function symbols in symbol tables.
      *                  We don't want to parse bodies of functions.
      */
-    public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) throws SemanticException {
+    public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) {
         if (!parseBody) {
             Type returnType = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
             if (returnType != null && returnType.typeStructure().isArray()) {
-                throw new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start);
+                errorLogger.log(new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start));
             }
             try {
                 symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
             } catch (SymbolTableDuplicateKeyException e) {
-                throw new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
+                errorLogger.log(new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol()));
             }
         } else {
             // actually recurse into body of the function here.
@@ -208,6 +210,7 @@ public class SemanticChecker {
                     symbolTable.insertSymbol(param);
                 } catch (SymbolTableDuplicateKeyException e) {
                     // unreachable coz it's already checked
+                    // FIXME: it's reachable now since we are not exiting on error
                 }
             }
             visitStatSeq(ctx.stat_seq());
@@ -215,7 +218,7 @@ public class SemanticChecker {
         }
     }
 
-    public void visitStatSeq(TigerParser.Stat_seqContext ctx) throws SemanticException {
+    public void visitStatSeq(TigerParser.Stat_seqContext ctx) {
         while (ctx != null) {
             visitStat(ctx.stat());
             ctx = ctx.stat_seq();
@@ -234,7 +237,7 @@ public class SemanticChecker {
         return new Value(variable, idx);
     }
 
-    public void visitStat(TigerParser.StatContext ctx) throws SemanticException {
+    public void visitStat(TigerParser.StatContext ctx) {
         if (ctx.LET() != null) {
             symbolTable.createScope();
             visitDeclarationSegment(ctx.declaration_segment(), false);
@@ -244,7 +247,14 @@ public class SemanticChecker {
         // value ASSIGN expr SEMICOLON
         if (ctx.value() != null) {
             NakedVariable variable = generateExpr(ctx.expr(0));
-            ir.emitAssign(getValue(ctx.value()), variable);
+            if(variable == null){ // ok?
+                return;
+            }
+            Value lvalue = getValue(ctx.value());
+            if(lvalue == null) {
+                return;
+            }
+            ir.emitAssign(lvalue, variable);
         }
     }
 
@@ -260,67 +270,74 @@ public class SemanticChecker {
         if (ctx.OPENPAREN() != null) {
             return generateExpr(ctx.expr(0));
         }
-        String tmpName = symbolTable.generateTemporary(BaseType.INT);
+
         // expr: numeric_const
         if (ctx.numeric_const() != null) {
-            // FIXME: implement floats
+            // FIXME: support floats
+            String tmpName = symbolTable.generateTemporary(BaseType.INT);
             ir.emitAssignImmediate(symbolTable.getNaked(tmpName), parseInt(ctx.numeric_const().getText()));
             return symbolTable.getNaked(tmpName);
         }
+        // TODO: Type check, POW operation, DRY code, a==b==c should be an error
+        NakedVariable left = generateExpr(ctx.expr(0));
+        NakedVariable right = generateExpr(ctx.expr(0));
+        // TODO: we can stop evaluating on errors right?
+        if(left == null || right == null){
+            return null;
+        }
+        assert left.typeStructure.arraySize == 0;
+        assert right.typeStructure.arraySize == 0;
+
+        // TODO: fix this type
+        String tmpName = symbolTable.generateTemporary(BaseType.INT);
 
         // expr: <assoc=right> expr POW expr
+        if(ctx.POW() != null){
+            if(right.typeStructure.base != BaseType.INT){
+                errorLogger.log(new SemanticException("The right operand for ** must be an integer", ctx.POW().getSymbol()));
+                return null;
+            }
+        }
 
         // expr: expr mult_div_operator expr
         if (ctx.mult_div_operator() != null) {
-            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
-                    generateExpr(ctx.expr(1)),
-                    symbolTable.getNaked(tmpName),
-                    ctx.mult_div_operator().getText());
-            return symbolTable.getNaked(tmpName);
         }
         // expr: expr plus_minus_operator expr
         if (ctx.plus_minus_operator() != null) {
-            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
-                    generateExpr(ctx.expr(1)),
-                    symbolTable.getNaked(tmpName),
-                    ctx.plus_minus_operator().getText());
-            return symbolTable.getNaked(tmpName);
         }
         // expr: expr comparison_operator expr
         if (ctx.comparison_operator() != null) {
-            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
-                    generateExpr(ctx.expr(1)),
-                    symbolTable.getNaked(tmpName),
-                    ctx.comparison_operator().getText());
-            return symbolTable.getNaked(tmpName);
+            if(left.typeStructure.base != right.typeStructure.base) {
+                errorLogger.log(new SemanticException("Comparison operators take operands which may be either both integer or both float", ctx.comparison_operator().start));
+                return null;
+            }
+            if(ctx.expr(0).comparison_operator() != null || ctx.expr(1).comparison_operator() != null){
+                errorLogger.log(new SemanticException("Comparison operators do not associate, for example, a==b==c is a semantic error", ctx.comparison_operator().start));
+                return null; // TODO: we can stop evaluating right?
+            }
         }
 
         // expr: expr AND expr
         if (ctx.AND() != null) {
-            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
-                    generateExpr(ctx.expr(1)),
-                    symbolTable.getNaked(tmpName),
-                    ctx.AND().getText());
-            return symbolTable.getNaked(tmpName);
         }
         // expr: expr OR expr
         if (ctx.OR() != null) {
-            ir.emitBinaryOp(generateExpr(ctx.expr(0)),
-                    generateExpr(ctx.expr(1)),
-                    symbolTable.getNaked(tmpName),
-                    ctx.OR().getText());
-            return symbolTable.getNaked(tmpName);
         }
 
-        return null;
+        ir.emitBinaryOp(left,
+                right,
+                symbolTable.getNaked(tmpName),
+                ctx.getChild(1).getText());
+
+        return symbolTable.getNaked(tmpName);
     }
 
-    public void visitDeclarationSegment(TigerParser.Declaration_segmentContext ctx, boolean isRoot) throws SemanticException {
+    public void visitDeclarationSegment(TigerParser.Declaration_segmentContext ctx, boolean isRoot) {
         visitTypeDeclarationList(ctx.type_declaration_list());
         visitVarDeclarationList(ctx.var_declaration_list(), isRoot);
     }
 
-    public void visitVarDeclarationList(TigerParser.Var_declaration_listContext ctx, boolean isRoot) throws SemanticException {
+    public void visitVarDeclarationList(TigerParser.Var_declaration_listContext ctx, boolean isRoot) {
         if (ctx.var_declaration() == null) {
             return;
         }
@@ -328,11 +345,11 @@ public class SemanticChecker {
         visitVarDeclarationList(ctx.var_declaration_list(), isRoot);
     }
 
-    public void visitVarDeclaration(TigerParser.Var_declarationContext ctx, boolean isRoot) throws SemanticException {
+    public void visitVarDeclaration(TigerParser.Var_declarationContext ctx, boolean isRoot) {
         if (ctx.storage_class().STATIC() == null && isRoot) {
-            throw new SemanticException("var declaration is not allowed in global section", ctx.storage_class().getStart());
+            errorLogger.log(new SemanticException("var declaration is not allowed in global section", ctx.storage_class().getStart()));
         } else if (ctx.storage_class().STATIC() != null && !isRoot) {
-            throw new SemanticException("static declaration is not allowed in local section", ctx.storage_class().getStart());
+            errorLogger.log(new SemanticException("static declaration is not allowed in local section", ctx.storage_class().getStart()));
         }
         SymbolKind symbolKind;
         if (ctx.storage_class().STATIC() != null) {
@@ -349,13 +366,13 @@ public class SemanticChecker {
             try {
                 symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
             } catch (SymbolTableDuplicateKeyException e) {
-                throw new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol());
+                errorLogger.log(new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol()));
             }
             idCtx = idCtx.id_list();
         }
     }
 
-    public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) throws SemanticException {
+    public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) {
         if (ctx.type_declaration() == null) {
             return;
         }
@@ -363,15 +380,15 @@ public class SemanticChecker {
         visitTypeDeclarationList(ctx.type_declaration_list());
     }
 
-    public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) throws SemanticException {
+    public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) {
         try {
             symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
         } catch (SymbolTableDuplicateKeyException e) {
-            throw new SemanticException("Type" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol());
+            errorLogger.log(new SemanticException("Type" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol()));
         }
     }
 
-    public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) throws SemanticException {
+    public List<Symbol> parseParamList(TigerParser.Param_listContext ctx) {
         ArrayList<Symbol> params = new ArrayList<>();
         HashSet<String> argNames = new HashSet<>();
         if (ctx.param() != null) {
@@ -387,7 +404,7 @@ public class SemanticChecker {
                 symbol = parseParam(cur.param());
                 name = symbol.getName();
                 if (argNames.contains(name)) {
-                    throw new SemanticException(String.format("duplicate parameter %s", name), cur.param().start);
+                    errorLogger.log(new SemanticException(String.format("duplicate parameter %s", name), cur.param().start));
                 }
                 argNames.add(name);
                 params.add(symbol);
@@ -398,10 +415,10 @@ public class SemanticChecker {
         return params;
     }
 
-    public Symbol parseParam(TigerParser.ParamContext ctx) throws SemanticException {
+    public Symbol parseParam(TigerParser.ParamContext ctx) {
         Type paramType = parseType(ctx.type());
         if (paramType.typeStructure().isArray()) {
-            throw new SemanticException(String.format("parameter %s can't be array", ctx.ID().getText()), ctx.ID().getSymbol());
+            errorLogger.log(new SemanticException(String.format("parameter %s can't be array", ctx.ID().getText()), ctx.ID().getSymbol()));
         }
         return new VariableSymbol(ctx.ID().getText(), paramType, SymbolKind.PARAM);
     }
@@ -414,7 +431,7 @@ public class SemanticChecker {
         };
     }
 
-    public Type parseType(TigerParser.TypeContext ctx) throws SemanticException {
+    public Type parseType(TigerParser.TypeContext ctx) {
         if (ctx.ARRAY() != null) {
             return new ArrayType(parseInt(ctx.INTLIT().getText()), parseBaseType(ctx.base_type()));
         }
@@ -422,7 +439,7 @@ public class SemanticChecker {
             String typeName = ctx.ID().getText();
             Symbol symbol = symbolTable.getSymbol(typeName);
             if (symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE) {
-                throw new SemanticException(String.format("Type %s does not exist", typeName), ctx.ID().getSymbol());
+                errorLogger.log(new SemanticException(String.format("Type %s does not exist", typeName), ctx.ID().getSymbol()));
             }
             return new CustomType(typeName, symbol.getSymbolType().typeStructure());
         }
