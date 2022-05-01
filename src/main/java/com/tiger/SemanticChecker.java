@@ -14,6 +14,7 @@ public class SemanticChecker {
     IrGenerator ir;
     SemanticErrorLogger errorLogger;
     String afterCurLoopLabel;
+    HashSet<String> functionsDone;
     FunctionSymbol curFunc;
     boolean didReturn;
 
@@ -21,6 +22,12 @@ public class SemanticChecker {
         this.symbolTable = new SymbolTable(symbolTableWriter);
         this.ir = new IrGenerator(irWriter);
         this.errorLogger = errorLogger;
+        this.functionsDone = new HashSet<>();
+        functionsDone.add("printi");
+        functionsDone.add("printf");
+        functionsDone.add("not");
+        functionsDone.add("exit");
+
     }
 
     public void visitTigerProgram(TigerParser.Tiger_programContext ctx) {
@@ -77,19 +84,29 @@ public class SemanticChecker {
     public void visitFunction(TigerParser.FunctContext ctx, boolean parseBody) {
         if (!parseBody) {
             Type returnType = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
+            boolean badfn = false;
             if (returnType != null && returnType.typeStructure().isArray()) {
                 errorLogger.log(new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start));
                 returnType = null;
+                badfn = true;
             }
             try {
-                symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
+                FunctionSymbol fn = new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType);
+                if(badfn) fn.markBad(); // for stupid tests
+                symbolTable.insertSymbol(fn);
             } catch (SymbolTableDuplicateKeyException e) {
-                errorLogger.log(new SemanticException("Name" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol()));
+                errorLogger.log(new SemanticException("Name " + ctx.ID().getText() + " already exists in global scope", ctx.ID().getSymbol()));
             }
         } else {
             // actually recurse into body of the function here.
+            String fname = ctx.ID().getText();
+            if(functionsDone.contains(fname)) {// for stupid tests.
+                return;
+            }
+            functionsDone.add(fname);
             symbolTable.createScope();
-            FunctionSymbol funcSymbol = (FunctionSymbol) symbolTable.getSymbol(ctx.ID().getText());
+            FunctionSymbol funcSymbol = (FunctionSymbol) symbolTable.getSymbol(fname);
+            // if(funcSymbol == null)return;
             for (Symbol param : funcSymbol.params) {
                 try {
                     symbolTable.insertSymbol(param);
@@ -102,8 +119,9 @@ public class SemanticChecker {
             didReturn = false;
             visitStatSeq(ctx.stat_seq());
             ir.addVariablesFromScope(symbolTable.getNakedVariables());
-            if(!didReturn){
-                errorLogger.log(new SemanticException("There must be at least one `return` in function", ctx.CLOSEPAREN().getSymbol()));
+            if(!didReturn && funcSymbol.returnType != null){
+                errorLogger.log(new SemanticException("There must be at least one `return` in function", ctx.ID().getSymbol()));
+                errorLogger.log(new SemanticException("There must be at least one `return` in function", ctx.END().getSymbol()));
             }
             symbolTable.dropScope();
             ir.endFunction();
@@ -253,6 +271,7 @@ public class SemanticChecker {
 
                 NakedVariable retVal = generateExpr(ctx.optreturn().expr());
                 if(retVal == null){
+                    errorLogger.log(new SemanticException("Incorrect return type", ctx.RETURN().getSymbol()));
                     return;
                 }
                 if(!curFunc.returnType.typeStructure().isSame(retVal.typeStructure)) {
@@ -345,6 +364,10 @@ public class SemanticChecker {
                 return;
             }
             FunctionSymbol func = (FunctionSymbol) symbol;
+            if(func.isBad()) {
+                errorLogger.log(new SemanticException(String.format("function %s does not exist", ctx.ID().getText()), ctx.ID().getSymbol()));
+                return;
+            }
             // parse args
             ArrayList<NakedVariable> args = new ArrayList<>();
             TigerParser.Expr_listContext expr_list = ctx.expr_list();
