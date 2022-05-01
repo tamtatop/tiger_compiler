@@ -154,6 +154,11 @@ public class IrGenerator {
         }
     }
 
+    // i = i+1
+    public void emitVariableIncrement(NakedVariable var){
+        funcIr.write(String.format("add, %s, 1, %s\n", mangledName(var), mangledName(var)));
+    }
+
     public String newUniqueLabel(String prefix) {
         labelCounter += 1;
         return String.format("_%s_%d", prefix, labelCounter);
