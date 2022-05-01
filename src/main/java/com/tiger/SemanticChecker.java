@@ -123,17 +123,37 @@ public class SemanticChecker {
         }
         // value ASSIGN expr SEMICOLON
         if (ctx.value() != null) {
-            // TODO: handle array assignment case.
-            NakedVariable result = generateExpr(ctx.expr(0));
-            if (result == null) { // ok?
-                return;
-            }
             Value lvalue = getValue(ctx.value());
             if (lvalue == null) {
                 return;
             }
+            // TODO: this does not support arr1 := (arr2)
+            if(lvalue.variable.typeStructure.isArray() && lvalue.array_idx == null) {
+                if(ctx.expr(0).value()==null){
+                    errorLogger.log(new SemanticException("Can't assign unit value to array", ctx.ASSIGN().getSymbol()));
+                    return;
+                }
+
+                Value rvalue = getValue(ctx.expr(0).value());
+                if(lvalue.variable.typeStructure.isSame(rvalue.variable.typeStructure)) {
+                    if(rvalue.array_idx != null) {
+                        errorLogger.log(new SemanticException("Can't assign unit value to array", ctx.ASSIGN().getSymbol()));
+                        return;
+                    }
+                    ir.emitAssign(lvalue, rvalue.variable);
+                } else {
+                    errorLogger.log(new SemanticException("assignment left value type structure is not same as right value", ctx.start));
+                    return;
+                }
+                return;
+            }
+
+            NakedVariable result = generateExpr(ctx.expr(0));
+            if (result == null) { // ok?
+                return;
+            }
             if (lvalue.variable.typeStructure.base == BaseType.INT && result.typeStructure.base == BaseType.FLOAT) {
-                errorLogger.log(new SemanticException("Can't promote float to int", ctx.value().start));
+                errorLogger.log(new SemanticException("Can't narrow float to int", ctx.value().start));
                 return;
             }
             ir.emitAssign(lvalue, result);
@@ -215,6 +235,10 @@ public class SemanticChecker {
         if (ctx.value() != null) {
             Value value = getValue(ctx.value());
             if(value.array_idx == null){
+                if(value.variable.typeStructure.isArray()) {
+                    errorLogger.log(new SemanticException("Can't do binary operations on arrays", ctx.value().start));
+                    return null;
+                }
                 return value.variable;
             } else {
                 String tmpName = symbolTable.generateTemporary(value.variable.typeStructure.base);
@@ -316,8 +340,10 @@ public class SemanticChecker {
     public void visitVarDeclaration(TigerParser.Var_declarationContext ctx, boolean isRoot) {
         if (ctx.storage_class().STATIC() == null && isRoot) {
             errorLogger.log(new SemanticException("var declaration is not allowed in global section", ctx.storage_class().getStart()));
+            return;
         } else if (ctx.storage_class().STATIC() != null && !isRoot) {
             errorLogger.log(new SemanticException("static declaration is not allowed in local section", ctx.storage_class().getStart()));
+            return;
         }
         SymbolKind symbolKind;
         if (ctx.storage_class().STATIC() != null) {
@@ -326,6 +352,22 @@ public class SemanticChecker {
             symbolKind = SymbolKind.VARIABLE;
         }
         Type symbolType = parseType(ctx.type());
+        if(isRoot && ctx.optional_init().numeric_const() != null) {
+            errorLogger.log(new SemanticException("can't initialize static variable", ctx.optional_init().getStart()));
+            return;
+        }
+        Integer intVal = null;
+        Float floatVal = null;
+        if(ctx.optional_init().ASSIGN() != null){
+            if(ctx.optional_init().numeric_const().FLOATLIT() != null && symbolType.typeStructure().base != BaseType.FLOAT) {
+                errorLogger.log(new SemanticException("can't narrow float to int in initialization", ctx.optional_init().getStart()));
+            }
+            if(ctx.optional_init().numeric_const().FLOATLIT() != null){
+                floatVal = Float.parseFloat(ctx.optional_init().numeric_const().getText());
+            } else {
+                intVal = parseInt(ctx.optional_init().numeric_const().getText());
+            }
+        }
 
         // id_list: ID | ID COMMA id_list;
         TigerParser.Id_listContext idCtx = ctx.id_list();
@@ -333,11 +375,18 @@ public class SemanticChecker {
             String name = idCtx.ID().getText();
             try {
                 symbolTable.insertSymbol(new VariableSymbol(name, symbolType, symbolKind));
+                if(intVal!=null){
+                    ir.emitAssignImmediate(symbolTable.getNaked(name), intVal);
+                }
+                if(floatVal!=null){
+                    ir.emitAssignImmediate(symbolTable.getNaked(name), intVal);
+                }
             } catch (SymbolTableDuplicateKeyException e) {
                 errorLogger.log(new SemanticException("Variable name" + name + "already exists in this scope", idCtx.ID().getSymbol()));
             }
             idCtx = idCtx.id_list();
         }
+
     }
 
     public void visitTypeDeclarationList(TigerParser.Type_declaration_listContext ctx) {
