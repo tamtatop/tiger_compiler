@@ -128,21 +128,53 @@ public class SemanticChecker {
         if (ctx.value() != null) {
             // TODO: handle array assignment case.
             NakedVariable result = generateExpr(ctx.expr(0));
-            if(result == null){ // ok?
+            if (result == null) { // ok?
                 return;
             }
             Value lvalue = getValue(ctx.value());
-            if(lvalue == null) {
+            if (lvalue == null) {
                 return;
             }
-            if(lvalue.variable.typeStructure.base == BaseType.INT && result.typeStructure.base == BaseType.FLOAT) {
+            if (lvalue.variable.typeStructure.base == BaseType.INT && result.typeStructure.base == BaseType.FLOAT) {
                 errorLogger.log(new SemanticException("Can't promote float to int", ctx.value().start));
                 return;
             }
             ir.emitAssign(lvalue, result);
         }
-    }
 
+        //| IF expr THEN stat_seq ENDIF SEMICOLON
+        //| IF expr THEN stat_seq ELSE stat_seq ENDIF SEMICOLON
+
+        if (ctx.IF() != null && ctx.ELSE() != null) {
+            NakedVariable result = generateExpr(ctx.expr(0));
+            String afterIf = ir.newUniqueLabel("after_if_do_this");
+            String falseLabel = ir.newUniqueLabel("if_false_do_this");
+            if (result != null) {
+                ir.emitIfCondition(result, falseLabel);
+            }
+            visitStatSeq(ctx.stat_seq(0));
+            ir.emitGoto(afterIf);
+            ir.emitLabel(falseLabel);
+            visitStatSeq(ctx.stat_seq(1));
+            ir.emitLabel(afterIf);
+
+            // breq, result, 0, not_abc
+            // stat_Seq kodi
+            // goto after_if
+            // not_abc:
+            // stat_seq_2 kodi
+            // after_if:
+        }
+        if (ctx.IF() != null && ctx.ELSE() == null) {
+            NakedVariable result = generateExpr(ctx.expr(0));
+            String falseLabel = ir.newUniqueLabel("if_false_do_this");
+            if (result != null) {
+                ir.emitIfCondition(result, falseLabel);
+            }
+            visitStatSeq(ctx.stat_seq(0));
+            ir.emitLabel(falseLabel);
+        }
+    }
 
     // let x=y;
     public NakedVariable generateExpr(TigerParser.ExprContext ctx) {

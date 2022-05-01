@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class IrGenerator {
-    private CancellableWriter writer;
+    private final CancellableWriter writer;
 
     // current function that we are emitting
     private FunctionSymbol curFunction;
@@ -90,6 +90,13 @@ public class IrGenerator {
         funcIr.write(String.format("assign, %s, %f,\n", mangledName(target), imm));
     }
 
+    public void emitGoto(String label) {
+        funcIr.write(String.format("goto, %s, ,\n", label));
+    }
+
+    public void emitIfCondition(NakedVariable variable, String elseLabel) {
+        funcIr.write(String.format("brneq, %s, 0, %s\n", mangledName(variable), elseLabel));
+    }
 
     private static final HashMap<String, String> opToIrOp = new HashMap<>();
     private static final HashMap<String, String> cmpOp = new HashMap<>();
@@ -124,7 +131,7 @@ public class IrGenerator {
             // target = 0
             // skip:
             // ...
-            String skipLabel = newUniqueLabel("cmp-op");
+            String skipLabel = newUniqueLabel("cmp_op");
             emitAssignImmediate(target, 1);
             funcIr.write(String.format("%s, %s, %s, %s\n", cmpOp.get(op), mangledName(left), mangledName(right), skipLabel));
             emitAssignImmediate(target, 0);
@@ -134,7 +141,7 @@ public class IrGenerator {
 
     public String newUniqueLabel(String prefix) {
         labelCounter += 1;
-        return String.format("_%s-%d", prefix, labelCounter);
+        return String.format("_%s_%d", prefix, labelCounter);
     }
 
     public void emitLabel(String label) {

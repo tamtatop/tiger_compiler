@@ -4,9 +4,18 @@ start_program fib
 
 start_function fib
 	int fib(int _1_n, float _1_y, int _1_z)
-	int-list: _2_tmp1, _2_tmp2, _1_z, _1_n
+	int-list: _2_tmp1, _2_tmp_1, _2_tmp2, _2_tmp_0, _1_z, _1_n
 	float-list:  _1_y
 	fib:
+	assign, _2_tmp_0, 1,
+	assign, _2_tmp_1, 1,
+	brleq, _1_n, _2_tmp_0, _cmp_op_1
+	assign, _2_tmp_1, 0,
+	_cmp_op_1:
+	brneq, _2_tmp_1, 0, _if_false_do_this_3
+	goto, _after_if_do_this_2, ,
+	_if_false_do_this_3:
+	_after_if_do_this_2:
 	return,,,
 end_function fib
 

@@ -26,7 +26,6 @@ class ScopeWithId {
 
 public class SymbolTable implements ISymbolTable {
     CancellableWriter writer;
-    //    HashMap<String, Stack<Symbol>> symbolTable;
     Stack<ScopeWithId> symbolTable;
     int scopeIdCounter;
     int temporaryVariableCounter;
