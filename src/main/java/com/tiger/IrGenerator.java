@@ -77,7 +77,7 @@ public class IrGenerator {
         if (target.array_idx == null) {
             funcIr.write(String.format("assign, %s, %s,\n", mangledName(target.variable), mangledName(source)));
         } else {
-            // TODO: implement array assignement
+            funcIr.write(String.format("array_store, %s, %s, %s\n", mangledName(target.variable), mangledName(target.array_idx), mangledName(source)));
         }
     }
 

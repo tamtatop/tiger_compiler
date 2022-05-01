@@ -1,30 +1,15 @@
 start_program sort
-	static-int-list: _1_arr[8], _1_a, _1_b
-	static-float-list:  _1_f
+	static-int-list: _0_arr[8], _0_t, _0_x
+	static-float-list: 
 
 start_function main
-	int main()
-	int-list: _2_arr[8], _2_a, _2_b
-	float-list:  _2_f
+	int main(int _1_x)
+	int-list: _2_x, _3_x, _1_x
+	float-list: 
 	main:
-	assign, _1_tmp_0, 0,
-	array_load, _1_tmp_1, _0_arr, _1_tmp_0
-	assign, _1_tmp_2, 1,
-	array_load, _1_tmp_3, _0_arr, _1_tmp_2
-	add, _1_tmp_1, _1_tmp_3, _1_tmp_4
-	assign, _0_b, _1_tmp_4,
-	assign, _1_tmp_5, 10,
-	assign, _0_a, _1_tmp_5,
-	assign, _1_tmp_6, 5,
-	assign, _1_tmp_7, 5,
-	add, _1_tmp_6, _1_tmp_7, _1_tmp_8
-	assign, _0_b, _1_tmp_8,
-	assign, _1_tmp_9, 5.500000,
-	assign, _1_tmp_10, 10,
-	add, _1_tmp_9, _1_tmp_10, _1_tmp_11
-	assign, _0_f, _1_tmp_11,
-	assign, _1_tmp_12, 5,
-	assign, _1_tmp_13, 10,
+	assign, _0_t, _2_x,
+	assign, _0_t, _3_x,
+	array_store, _0_arr, _1_x, _0_t
 	return,,,
 end_function main
 

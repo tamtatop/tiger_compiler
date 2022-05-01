@@ -1,18 +1,23 @@
 /* selection sort */
 program sort
 let
-    type catList = array [8] of int;
-    static a : int ;
-    static b : int ;
-    static f : float ;
-    static arr : catList ;
+    type catList = array[8] of int;
+    static arr : catList;
+    static x : int ;
+    static t : int ;
 begin
-    function main () : int
+    function main (x: int) : int
     begin
-        b := arr[0]+arr[1];
-        a := 10;
-        b := 5+5;
-        f := 5.5+10;
-        arr[10] := 5;
+        let
+            var x: int;
+        begin
+            t:=x;
+        end
+        let
+            var x: int;
+        begin
+            t:=x;
+        end
+        arr[x] := t;
     end
 end
