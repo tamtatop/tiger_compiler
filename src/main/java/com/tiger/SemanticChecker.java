@@ -55,6 +55,7 @@ public class SemanticChecker {
             Type returnType = ctx.ret_type().type() == null ? null : parseType(ctx.ret_type().type());
             if (returnType != null && returnType.typeStructure().isArray()) {
                 errorLogger.log(new SemanticException(String.format("function %s return type can't be array", ctx.ID().getText()), ctx.ret_type().start));
+                returnType = null;
             }
             try {
                 symbolTable.insertSymbol(new FunctionSymbol(ctx.ID().getText(), parseParamList(ctx.param_list()), returnType));
@@ -100,6 +101,11 @@ public class SemanticChecker {
         if (ctx.value_tail().expr() != null) {
             idx = generateExpr(ctx.value_tail().expr());
             if(idx == null){
+                return null;
+            }
+            if(!idx.typeStructure.isSame(new IntType().typeStructure())) {
+                errorLogger.log(new SemanticException(
+                        "index must be int", ctx.value_tail().expr().getStart()));
                 return null;
             }
             if(!variable.typeStructure.isArray()) {
@@ -259,6 +265,9 @@ public class SemanticChecker {
         // expr: value
         if (ctx.value() != null) {
             Value value = getValue(ctx.value());
+            if(value == null){
+                return null;
+            }
             if(value.array_idx == null){
                 if(value.variable.typeStructure.isArray()) {
                     errorLogger.log(new SemanticException("Can't do binary operations on arrays", ctx.value().start));
@@ -377,6 +386,13 @@ public class SemanticChecker {
             symbolKind = SymbolKind.VARIABLE;
         }
         Type symbolType = parseType(ctx.type());
+        if(symbolType == null){
+            return;
+        }
+        if(symbolType.typeStructure().isArray()) {
+            errorLogger.log(new SemanticException("can't declare arrays directly", ctx.type().getStart()));
+            return;
+        }
         if(isRoot && ctx.optional_init().numeric_const() != null) {
             errorLogger.log(new SemanticException("can't initialize static variable", ctx.optional_init().getStart()));
             return;
@@ -386,11 +402,12 @@ public class SemanticChecker {
         if(ctx.optional_init().ASSIGN() != null){
             if(ctx.optional_init().numeric_const().FLOATLIT() != null && symbolType.typeStructure().base != BaseType.FLOAT) {
                 errorLogger.log(new SemanticException("can't narrow float to int in initialization", ctx.optional_init().getStart()));
-            }
-            if(ctx.optional_init().numeric_const().FLOATLIT() != null){
-                floatVal = Float.parseFloat(ctx.optional_init().numeric_const().getText());
             } else {
-                intVal = parseInt(ctx.optional_init().numeric_const().getText());
+                if(ctx.optional_init().numeric_const().FLOATLIT() != null){
+                    floatVal = Float.parseFloat(ctx.optional_init().numeric_const().getText());
+                } else {
+                    intVal = parseInt(ctx.optional_init().numeric_const().getText());
+                }
             }
         }
 
@@ -424,7 +441,12 @@ public class SemanticChecker {
 
     public void visitTypeDeclaration(TigerParser.Type_declarationContext ctx) {
         try {
-            symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(), parseType(ctx.type())));
+            Type type = parseType(ctx.type());
+            if(type==null){
+                return;
+            }
+            symbolTable.insertSymbol(new TypeSymbol(ctx.ID().getText(),
+                    type));
         } catch (SymbolTableDuplicateKeyException e) {
             errorLogger.log(new SemanticException("Type" + ctx.ID().getText() + "already exists", ctx.ID().getSymbol()));
         }
@@ -444,9 +466,13 @@ public class SemanticChecker {
             while (cur.param() != null) {
 
                 symbol = parseParam(cur.param());
+                if(symbol == null){
+                    continue;
+                }
                 name = symbol.getName();
                 if (argNames.contains(name)) {
                     errorLogger.log(new SemanticException(String.format("duplicate parameter %s", name), cur.param().start));
+                    continue;
                 }
                 argNames.add(name);
                 params.add(symbol);
@@ -459,8 +485,12 @@ public class SemanticChecker {
 
     public Symbol parseParam(TigerParser.ParamContext ctx) {
         Type paramType = parseType(ctx.type());
+        if(paramType == null){
+            return null;
+        }
         if (paramType.typeStructure().isArray()) {
             errorLogger.log(new SemanticException(String.format("parameter %s can't be array", ctx.ID().getText()), ctx.ID().getSymbol()));
+            return null;
         }
         return new VariableSymbol(ctx.ID().getText(), paramType, SymbolKind.PARAM);
     }
@@ -482,8 +512,8 @@ public class SemanticChecker {
             Symbol symbol = symbolTable.getSymbol(typeName);
             if (symbol == null || symbol.getSymbolKind() != SymbolKind.TYPE) {
                 errorLogger.log(new SemanticException(String.format("Type %s does not exist", typeName), ctx.ID().getSymbol()));
+                return null;
             }
-            assert symbol != null;
             return new CustomType(typeName, symbol.getSymbolType().typeStructure());
         }
         return switch (parseBaseType(ctx.base_type())) {
