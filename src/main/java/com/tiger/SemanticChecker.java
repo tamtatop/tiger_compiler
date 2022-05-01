@@ -211,7 +211,7 @@ public class SemanticChecker {
             NakedVariable result = generateExpr(ctx.expr(0));
             if (result != null) {
                 if (result.typeStructure.base == BaseType.INT) {
-                    errorLogger.log(new SemanticException("'if' can't have FLOAT in condition", ctx.expr(0).start));
+                    errorLogger.log(new SemanticException("'while' can't have FLOAT in condition", ctx.expr(0).start));
                 } else {
                     ir.emitIfCondition(result, afterWhile);
                 }
@@ -231,15 +231,32 @@ public class SemanticChecker {
         }
         // stat: FOR ID ASSIGN expr TO expr DO stat_seq ENDDO SEMICOLON
         if (ctx.FOR() != null) {
+            String forLabel = ir.newUniqueLabel("for");
             String afterFor = ir.newUniqueLabel("after_for");
             String prevLoopLabel = afterCurLoopLabel;
             afterCurLoopLabel = afterFor;
+
+            NakedVariable i_result = generateExpr(ctx.expr(0));
+            NakedVariable to_result = generateExpr(ctx.expr(1));
+            if (i_result != null && to_result != null) {
+                if (i_result.typeStructure.base == BaseType.FLOAT && to_result.typeStructure.base == BaseType.FLOAT) {
+                    errorLogger.log(new SemanticException("'for' can't have FLOAT in condition", ctx.expr(0).start));
+                } else {
+                    ir.emitForCondition(i_result, to_result, afterFor);
+                }
+            }
+
+            visitStatSeq(ctx.stat_seq(0));
+            ir.emitGoto(forLabel);
+            ir.emitGoto(afterFor);
 
             // for:
             // expr1 code
             // expr2 code
             // brgeq expr1, expr2, after_for
-            //
+            // stat_seq code
+            // goto for
+            // goto after_for
 
             afterCurLoopLabel = prevLoopLabel;
         }
