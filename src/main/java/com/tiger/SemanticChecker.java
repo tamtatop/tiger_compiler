@@ -75,8 +75,7 @@ public class SemanticChecker {
                     // we've already reported duplicate variable error, so we can ignore it now
                 }
             }
-            ir.startFunction(funcSymbol);
-            ir.setFunctionParams(symbolTable.getNakedVariables()); // bit too hacky
+            ir.startFunction(funcSymbol, symbolTable.curScopeName());
             visitStatSeq(ctx.stat_seq());
             ir.addVariablesFromScope(symbolTable.getNakedVariables());
             symbolTable.dropScope();

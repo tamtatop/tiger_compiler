@@ -142,21 +142,19 @@ public class IrGenerator {
     }
 
 
-    public void startFunction(FunctionSymbol curFunction) {
+    public void startFunction(FunctionSymbol curFunction, String scopeName) {
         this.curFunction = curFunction;
         funcIr = new StringWriter(0);
         funcVariables = new ArrayList<>();
         funcParams = new ArrayList<>();
+        for (Symbol param : curFunction.params) {
+            funcParams.add(new NakedVariable(param.getName(), scopeName, param.getSymbolType().typeStructure()));
+        }
     }
 
     public void addVariablesFromScope(List<NakedVariable> variables) {
         funcVariables.addAll(variables);
     }
-
-    public void setFunctionParams(List<NakedVariable> variables) {
-        funcParams.addAll(variables);
-    }
-
 
     private String generateSignature(List<NakedVariable> params) {
         StringBuilder signature = new StringBuilder();

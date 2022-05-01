@@ -3,7 +3,7 @@ start_program fib
 	static-float-list: 
 
 start_function fib
-	int fib(float _1_y, int _1_z, int _1_n)
+	int fib(int _1_n, float _1_y, int _1_z)
 	int-list: _2_tmp1, _2_tmp2, _1_z, _1_n
 	float-list:  _1_y
 	fib:
