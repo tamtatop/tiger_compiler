@@ -242,27 +242,39 @@ public class SemanticChecker {
             String prevLoopLabel = afterCurLoopLabel;
             afterCurLoopLabel = afterFor;
 
-            NakedVariable i_result = generateExpr(ctx.expr(0));
+            NakedVariable i = symbolTable.getNaked(ctx.ID().getText());
+            if (i == null) {
+                errorLogger.log(new SemanticException(String.format("variable %s wasn't declared", ctx.ID().getText()), ctx.ID().getSymbol()));
+            } else if (!i.typeStructure.isBaseInt()) {
+                errorLogger.log(new SemanticException(String.format("variable %s's type must be int", ctx.ID().getText()), ctx.ID().getSymbol()));
+            }
+            NakedVariable from_result = generateExpr(ctx.expr(0));
+            ir.emitAssign(new Value(i), from_result);
             NakedVariable to_result = generateExpr(ctx.expr(1));
-            if (i_result != null && to_result != null) {
-                if (i_result.typeStructure.base == BaseType.FLOAT && to_result.typeStructure.base == BaseType.FLOAT) {
-                    errorLogger.log(new SemanticException("'for' can't have FLOAT in condition", ctx.expr(0).start));
+            ir.emitLabel(forLabel);
+
+            if (from_result != null && to_result != null) {
+                if (!from_result.typeStructure.isBaseInt() || !to_result.typeStructure.isBaseInt()) {
+                    errorLogger.log(new SemanticException("'for' must have int types in range", ctx.expr(0).start));
                 } else {
-                    ir.emitForCondition(i_result, to_result, afterFor);
+                    ir.emitForCondition(from_result, to_result, afterFor);
                 }
             }
 
             visitStatSeq(ctx.stat_seq(0));
+            ir.emitVariableIncrement(i);
             ir.emitGoto(forLabel);
-            ir.emitGoto(afterFor);
+            ir.emitLabel(afterFor);
 
-            // for:
             // expr1 code
+            // assign, i, expr1_result,
             // expr2 code
-            // brgeq expr1, expr2, after_for
+            // for:
+            // brgeq i, expr2, after_for
             // stat_seq code
+            // add, i, 1, i
             // goto for
-            // goto after_for
+            // after_for
 
             afterCurLoopLabel = prevLoopLabel;
         }
