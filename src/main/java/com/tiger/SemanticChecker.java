@@ -386,8 +386,10 @@ public class SemanticChecker {
             }
             // arg types
             for (int i = 0; i < args.size(); i++) {
-                if(!func.params.get(i).getSymbolType().typeStructure().isSame(args.get(i).typeStructure)) {
-                    errorLogger.log(new SemanticException("wrong types in call", ctx.ID().getSymbol()));
+                TypeStructure targetTypeStruct = func.params.get(i).getSymbolType().typeStructure();
+                TypeStructure argTypeStruct = args.get(i).typeStructure;
+                if(argTypeStruct.base == BaseType.FLOAT && targetTypeStruct.base == BaseType.INT) {
+                    errorLogger.log(new SemanticException("narrowing or wrong types in call", ctx.ID().getSymbol()));
                     return;
                 }
             }
@@ -497,10 +499,10 @@ public class SemanticChecker {
 
         // expr: expr comparison_operator expr
         if (ctx.comparison_operator() != null) {
-            if(left.typeStructure.base != right.typeStructure.base) {
-                errorLogger.log(new SemanticException("Comparison operators take operands which may be either both integer or both float", ctx.comparison_operator().start));
-                return null;
-            }
+//            if(left.typeStructure.base != right.typeStructure.base) {
+//                errorLogger.log(new SemanticException("Comparison operators take operands which may be either both integer or both float", ctx.comparison_operator().start));
+//                return null;
+//            }
             if(ctx.expr(0).comparison_operator() != null || ctx.expr(1).comparison_operator() != null){
                 errorLogger.log(new SemanticException("Comparison operators do not associate, for example, a==b==c is a semantic error", ctx.comparison_operator().start));
                 return null;
