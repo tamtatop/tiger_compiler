@@ -218,9 +218,31 @@ public class IrGenerator {
             writer.write(staticIr.toString().replace("\n", "\n\t"));
         }
         writer.write(funcIr.toString().replace("\n", "\n\t"));
-        writer.write("return,,,\n");
+        if(curFunction.returnType == null)
+            writer.write("return , , , \n");
+        else
+            writer.write("return , , , \n");
 
         writer.write(String.format("end_function %s\n\n", curFunction.name));
+    }
+
+    private String callArgs(ArrayList<NakedVariable> args) {
+        StringBuilder argsir = new StringBuilder();
+        for (NakedVariable arg : args) {
+            argsir.append(String.format("%s, ", mangledName(arg)));
+        }
+        if (argsir.isEmpty()) {
+            return argsir.toString();
+        } else {
+            return argsir.substring(0, argsir.length() - 2);
+        }
+    }
+
+    public void emitCall(FunctionSymbol func, ArrayList<NakedVariable> args) {
+        funcIr.write(String.format("call %s, %s\n",  func.name, callArgs(args)));
+    }
+    public void emitCallR(FunctionSymbol func, ArrayList<NakedVariable> args, NakedVariable target) {
+        funcIr.write(String.format("call %s, %s, %s\n", mangledName(target), func.name, callArgs(args)));
     }
 
 }

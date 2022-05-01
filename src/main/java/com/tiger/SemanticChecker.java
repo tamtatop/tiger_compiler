@@ -23,10 +23,32 @@ public class SemanticChecker {
 
     public void visitTigerProgram(TigerParser.Tiger_programContext ctx) {
         symbolTable.createScope();
+        ArrayList<Symbol> singleIntArg = new ArrayList<>();
+        singleIntArg.add(new VariableSymbol("i", new IntType(), SymbolKind.PARAM));
+        ArrayList<Symbol> singleFloatArg = new ArrayList<>();
+        singleFloatArg.add(new VariableSymbol("f", new FloatType(), SymbolKind.PARAM));
+        try {
+            symbolTable.insertSymbol(new FunctionSymbol(
+                    "printi", singleIntArg, null
+            ));
+            symbolTable.insertSymbol(new FunctionSymbol(
+                    "printf", singleFloatArg, null
+            ));
+            symbolTable.insertSymbol(new FunctionSymbol(
+                    "not", singleIntArg, new IntType()
+            ));
+            symbolTable.insertSymbol(new FunctionSymbol(
+                    "exit", singleIntArg, null
+            ));
+        } catch (SymbolTableDuplicateKeyException ignored) {
+            // should not happen
+        }
         // DO WORK BITCH
         System.out.printf("Hello program %s!\n", ctx.ID().getText());
         visitDeclarationSegment(ctx.declaration_segment(), true);
         ir.generateProgramHeader(ctx.ID().getText(), symbolTable.getNakedVariables());
+
+
         visitFunctionList(ctx.funct_list(), false);
         visitFunctionList(ctx.funct_list(), true);
         symbolTable.dropScope();
@@ -279,6 +301,63 @@ public class SemanticChecker {
             afterCurLoopLabel = prevLoopLabel;
         }
 
+        //| optprefix ID OPENPAREN expr_list CLOSEPAREN SEMICOLON
+        if(ctx.OPENPAREN() != null) {
+            // 1. check function exists
+            Symbol symbol = symbolTable.getSymbol(ctx.ID().getText());
+            if(symbol == null || symbol.getSymbolKind() != SymbolKind.FUNCTION){
+                errorLogger.log(new SemanticException(String.format("function %s does not exist", ctx.ID().getText()), ctx.ID().getSymbol()));
+                return;
+            }
+            FunctionSymbol func = (FunctionSymbol) symbol;
+            // parse args
+            ArrayList<NakedVariable> args = new ArrayList<>();
+            TigerParser.Expr_listContext expr_list = ctx.expr_list();
+            if(expr_list.expr()!=null) {
+                args.add(generateExpr(expr_list.expr()));
+                TigerParser.Expr_list_tailContext cur = expr_list.expr_list_tail();
+                while(cur.expr() != null){
+                    args.add(generateExpr(cur.expr()));
+                    cur=cur.expr_list_tail();
+                }
+            }
+            // arg count
+            if(func.params.size() != args.size()){
+                errorLogger.log(new SemanticException(String.format("expected %d args got %d", func.params.size(), args.size()), ctx.ID().getSymbol()));
+                return;
+            }
+            // arg types
+            for (int i = 0; i < args.size(); i++) {
+                if(!func.params.get(i).getSymbolType().typeStructure().isSame(args.get(i).typeStructure)) {
+                    errorLogger.log(new SemanticException("wrong types in call", ctx.ID().getSymbol()));
+                    return;
+                }
+            }
+            if(ctx.optprefix().ASSIGN() != null){
+                if(func.returnType == null){
+                    errorLogger.log(new SemanticException("function does not return anything", ctx.optprefix().start));
+                    return;
+                }
+                Value value = getValue(ctx.optprefix().value());
+                if(value.variable.typeStructure.isArray() && value.array_idx == null){
+                    errorLogger.log(new SemanticException("can't assign to array", ctx.optprefix().start));
+                    return;
+                }
+                if(value.variable.typeStructure.base == BaseType.INT && func.returnType.typeStructure().base == BaseType.FLOAT) {
+                    errorLogger.log(new SemanticException("narrowing assignment", ctx.optprefix().start));
+                    return;
+                }
+                String retVal = symbolTable.generateTemporary(func.returnType.typeStructure().base);
+                ir.emitCallR(func, args, symbolTable.getNaked(retVal));
+                ir.emitAssign(value, symbolTable.getNaked(retVal));
+            } else {
+                ir.emitCall(func, args);
+            }
+
+
+
+        }
+
         if (ctx.BREAK() != null) {
             if (afterCurLoopLabel == null) {
                 errorLogger.log(new SemanticException("'break' isn't allowed from here", ctx.BREAK().getSymbol()));
@@ -299,7 +378,7 @@ public class SemanticChecker {
             }
             if(value.array_idx == null){
                 if(value.variable.typeStructure.isArray()) {
-                    errorLogger.log(new SemanticException("Can't do binary operations on arrays", ctx.value().start));
+                    errorLogger.log(new SemanticException("can't have array here", ctx.value().start));
                     return null;
                 }
                 return value.variable;

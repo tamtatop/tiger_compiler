@@ -11,6 +11,9 @@ public interface Symbol {
 
 
     default String format() {
-        return String.format("%s, %s, %s", getName(), getSymbolKind().format(), getSymbolType().format());
+        if (getSymbolType() == null)
+            return String.format("%s, %s, %s", getName(), getSymbolKind().format(), "void");
+        else
+            return String.format("%s, %s, %s", getName(), getSymbolKind().format(), getSymbolType().format());
     }
 }
