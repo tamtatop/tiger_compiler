@@ -142,8 +142,8 @@ public class SemanticChecker {
             ir.emitAssign(lvalue, result);
         }
 
-        //| IF expr THEN stat_seq ENDIF SEMICOLON
-        //| IF expr THEN stat_seq ELSE stat_seq ENDIF SEMICOLON
+        //stat: IF expr THEN stat_seq ENDIF SEMICOLON
+        //stat: IF expr THEN stat_seq ELSE stat_seq ENDIF SEMICOLON
 
         if (ctx.IF() != null && ctx.ELSE() != null) {
             NakedVariable result = generateExpr(ctx.expr(0));
@@ -159,10 +159,10 @@ public class SemanticChecker {
             ir.emitLabel(afterIf);
 
             // breq, result, 0, not_abc
-            // stat_Seq kodi
+            // stat_Seq code
             // goto after_if
             // not_abc:
-            // stat_seq_2 kodi
+            // stat_seq_2 code
             // after_if:
         }
         if (ctx.IF() != null && ctx.ELSE() == null) {
@@ -173,6 +173,27 @@ public class SemanticChecker {
             }
             visitStatSeq(ctx.stat_seq(0));
             ir.emitLabel(falseLabel);
+        }
+        // stat: WHILE expr DO stat_seq ENDDO SEMICOLON
+        if (ctx.WHILE() != null) {
+            String whileLabel = ir.newUniqueLabel("while");
+            String afterWhile = ir.newUniqueLabel("after_while");
+
+            ir.emitLabel(whileLabel);
+            NakedVariable result = generateExpr(ctx.expr(0));
+            if (result != null) {
+                ir.emitIfCondition(result, afterWhile);
+            }
+            visitStatSeq(ctx.stat_seq(0));
+            ir.emitGoto(whileLabel);
+            ir.emitLabel(afterWhile);
+
+            // while:
+            // expr code
+            // breq, result, 0, after_while
+            // stat_seq code
+            // goto while
+            // after_while:
         }
     }
 

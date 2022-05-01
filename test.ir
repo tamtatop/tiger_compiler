@@ -4,11 +4,25 @@ start_program sort
 
 start_function main
 	int main(int _1_x)
-	int-list: _2_x, _3_x, _1_x
+	int-list: _2_x, _3_x, _3_tmp_4, _3_tmp_1, _3_tmp_0, _3_tmp_3, _3_tmp_2, _1_x
 	float-list: 
 	main:
 	assign, _0_t, _2_x,
 	assign, _0_t, _3_x,
+	assign, _3_tmp_0, 5,
+	assign, _3_x, _3_tmp_0,
+	_while_1:
+	assign, _3_tmp_1, 0,
+	assign, _3_tmp_2, 1,
+	brgt, _3_x, _3_tmp_1, _cmp_op_3
+	assign, _3_tmp_2, 0,
+	_cmp_op_3:
+	brneq, _3_tmp_2, 0, _after_while_2
+	assign, _3_tmp_3, 1,
+	sub, _3_x, _3_tmp_3, _3_tmp_4
+	assign, _3_x, _3_tmp_4,
+	goto, _while_1, ,
+	_after_while_2:
 	array_store, _0_arr, _1_x, _0_t
 	return,,,
 end_function main
