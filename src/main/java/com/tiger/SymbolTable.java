@@ -14,18 +14,28 @@ import java.util.List;
 import java.util.Stack;
 
 
+class ScopeWithId {
+    int scopeId;
+    HashMap<String, Symbol> scope;
+
+    public ScopeWithId(int scopeId, HashMap<String, Symbol> scope) {
+        this.scopeId = scopeId;
+        this.scope = scope;
+    }
+}
+
 public class SymbolTable implements ISymbolTable {
     CancellableWriter writer;
     //    HashMap<String, Stack<Symbol>> symbolTable;
-    Stack<HashMap<String, Symbol>> symbolTable;
-    int cur_scope_id;
-    int tmp_counter;
+    Stack<ScopeWithId> symbolTable;
+    int scopeIdCounter;
+    int temporaryVariableCounter;
 
     public SymbolTable(CancellableWriter writer) {
         this.writer = writer;
         symbolTable = new Stack<>();
-        cur_scope_id = 0;
-        tmp_counter = 0;
+        scopeIdCounter = 0;
+        temporaryVariableCounter = 0;
     }
 
     @Override
@@ -33,7 +43,7 @@ public class SymbolTable implements ISymbolTable {
         if (currentScopeContains(symbol.getName())) {
             throw new SymbolTableDuplicateKeyException(symbol.getName());
         }
-        HashMap<String, Symbol> scope = symbolTable.peek();
+        HashMap<String, Symbol> scope = symbolTable.peek().scope;
         scope.put(symbol.getName(), symbol);
 
         if(symbol.getSymbolKind() != SymbolKind.TEMP) {
@@ -43,19 +53,19 @@ public class SymbolTable implements ISymbolTable {
     }
 
     public boolean currentScopeContains(String name) {
-        return symbolTable.peek().containsKey(name);
+        return symbolTable.peek().scope.containsKey(name);
     }
 
     @Override
     public String curScopeName() {
-        return String.valueOf(cur_scope_id);
+        return String.valueOf(symbolTable.peek().scopeId);
     }
 
     @Override
     public Symbol getSymbol(String name) {
-        for (HashMap<String, Symbol> scope : symbolTable) {
-            if (scope.containsKey(name)) {
-                return scope.get(name);
+        for (ScopeWithId scope : symbolTable) {
+            if (scope.scope.containsKey(name)) {
+                return scope.scope.get(name);
             }
         }
         return null;
@@ -63,10 +73,9 @@ public class SymbolTable implements ISymbolTable {
 
     @Override
     public String getVariableScopeName(String name) {
-        for (int i = symbolTable.size()-1; i >= 0; i--) {
-            HashMap<String, Symbol> scope = symbolTable.get(i);
-            if (scope.containsKey(name)) {
-                return String.valueOf(i);
+        for (ScopeWithId scope : symbolTable) {
+            if (scope.scope.containsKey(name)) {
+                return String.valueOf(scope.scopeId);
             }
         }
         return null;
@@ -76,11 +85,11 @@ public class SymbolTable implements ISymbolTable {
     @Override
     public void createScope() {
         HashMap<String, Symbol> scope = new HashMap<>();
-        symbolTable.push(scope);
-        cur_scope_id += 1;
-        tmp_counter = 0;
+        symbolTable.push(new ScopeWithId(scopeIdCounter, scope));
+        scopeIdCounter += 1;
+        temporaryVariableCounter = 0;
 
-        writer.write(String.format("%sscope %d:\n", "\t".repeat(symbolTable.size() - 1), cur_scope_id));
+        writer.write(String.format("%sscope %d:\n", "\t".repeat(symbolTable.size() - 1), scopeIdCounter));
     }
 
     @Override
@@ -89,7 +98,7 @@ public class SymbolTable implements ISymbolTable {
     }
 
     public List<NakedVariable> getNakedVariables() {
-        HashMap<String, Symbol> scope = symbolTable.peek();
+        HashMap<String, Symbol> scope = symbolTable.peek().scope;
         List<NakedVariable> nakedVars = new ArrayList<>();
         scope.forEach((name, symbol) -> {
             if (symbol.getSymbolKind() == SymbolKind.FUNCTION || symbol.getSymbolKind() == SymbolKind.TYPE) {
@@ -101,7 +110,7 @@ public class SymbolTable implements ISymbolTable {
     }
 
     public String generateTemporary(BaseType baseType) {
-        String name = String.format("tmp_%d", tmp_counter);
+        String name = String.format("tmp_%d", temporaryVariableCounter);
         try {
             switch (baseType) {
                 case INT -> insertSymbol(new VariableSymbol(name, new IntType(), SymbolKind.TEMP));
@@ -110,7 +119,7 @@ public class SymbolTable implements ISymbolTable {
         } catch (SymbolTableDuplicateKeyException e) {
             // should not happen
         }
-        tmp_counter += 1;
+        temporaryVariableCounter += 1;
         return name;
     }
 

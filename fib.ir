@@ -1,0 +1,20 @@
+start_program fib
+	static-int-list: _0_result
+	static-float-list: 
+
+start_function fib
+	int fib(float _1_y, int _1_z, int _1_n)
+	int-list: _2_tmp1, _2_tmp2, _1_z, _1_n
+	float-list:  _1_y
+	fib:
+	return,,,
+end_function fib
+
+start_function main
+	int main()
+	int-list:
+	float-list: 
+	main:
+	return,,,
+end_function main
+

@@ -75,8 +75,12 @@ public class SemanticChecker {
                     // we've already reported duplicate variable error, so we can ignore it now
                 }
             }
+            ir.startFunction(funcSymbol);
+            ir.setFunctionParams(symbolTable.getNakedVariables()); // bit too hacky
             visitStatSeq(ctx.stat_seq());
+            ir.addVariablesFromScope(symbolTable.getNakedVariables());
             symbolTable.dropScope();
+            ir.endFunction();
         }
     }
 
@@ -118,6 +122,7 @@ public class SemanticChecker {
             symbolTable.createScope();
             visitDeclarationSegment(ctx.declaration_segment(), false);
             visitStatSeq(ctx.stat_seq(0));
+            ir.addVariablesFromScope(symbolTable.getNakedVariables());
             symbolTable.dropScope();
         }
         // value ASSIGN expr SEMICOLON
