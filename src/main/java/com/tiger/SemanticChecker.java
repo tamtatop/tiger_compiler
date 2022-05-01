@@ -75,9 +75,13 @@ class IrGenerator {
 
     // Word immediate means same as numeric constant
     public void emitAssignImmediate(NakedVariable target, Integer imm) {
-        // FIXME: implement same for floats
         writer.write(String.format("assign, %s, %d,\n", mangledName(target), imm));
     }
+
+    public void emitAssignImmediate(NakedVariable target, Float imm) {
+        writer.write(String.format("assign, %s, %f,\n", mangledName(target), imm));
+    }
+
 
     private static final HashMap<String, String> opToIrOp = new HashMap<>();
     private static final HashMap<String, String> cmpOp = new HashMap<>();
@@ -96,6 +100,10 @@ class IrGenerator {
         cmpOp.put(">", "brgt");
         cmpOp.put("<=", "brleq");
         cmpOp.put(">=", "brgeq");
+    }
+
+    public void emitArrayLoad(NakedVariable arr, NakedVariable idx, NakedVariable target) {
+        writer.write(String.format("array_load, %s, %s, %s\n", mangledName(target), mangledName(arr), mangledName(idx)));
     }
 
     public void emitBinaryOp(NakedVariable left, NakedVariable right, NakedVariable target, String op) {
@@ -263,7 +271,15 @@ public class SemanticChecker {
     public NakedVariable generateExpr(TigerParser.ExprContext ctx) {
         // expr: value
         if (ctx.value() != null) {
-            return getValue(ctx.value()).variable; // FIXME: wrong for array value
+            Value value = getValue(ctx.value());
+            if(value.array_idx == null){
+                return value.variable;
+            } else {
+                String tmpName = symbolTable.generateTemporary(value.variable.typeStructure.base);
+                NakedVariable tmpVar = symbolTable.getNaked(tmpName);
+                ir.emitArrayLoad(value.variable, value.array_idx, tmpVar);
+                return tmpVar;
+            }
         }
 
         // expr: OPENPAREN expr CLOSEPAREN;
@@ -273,14 +289,18 @@ public class SemanticChecker {
 
         // expr: numeric_const
         if (ctx.numeric_const() != null) {
-            // FIXME: support floats
-            String tmpName = symbolTable.generateTemporary(BaseType.INT);
-            ir.emitAssignImmediate(symbolTable.getNaked(tmpName), parseInt(ctx.numeric_const().getText()));
+            BaseType type = ctx.numeric_const().INTLIT() != null ? BaseType.INT : BaseType.FLOAT;
+            String tmpName = symbolTable.generateTemporary(type);
+            if(type == BaseType.INT) {
+                ir.emitAssignImmediate(symbolTable.getNaked(tmpName), parseInt(ctx.numeric_const().getText()));
+            } else {
+                ir.emitAssignImmediate(symbolTable.getNaked(tmpName), Float.parseFloat(ctx.numeric_const().getText()));
+            }
             return symbolTable.getNaked(tmpName);
         }
         // TODO: Type check, POW operation, DRY code, a==b==c should be an error
         NakedVariable left = generateExpr(ctx.expr(0));
-        NakedVariable right = generateExpr(ctx.expr(0));
+        NakedVariable right = generateExpr(ctx.expr(1));
         // TODO: we can stop evaluating on errors right?
         if(left == null || right == null){
             return null;

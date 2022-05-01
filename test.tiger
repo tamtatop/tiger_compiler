@@ -1,13 +1,17 @@
 /* selection sort */
 program sort
 let
+    type catList = array [8] of int;
     static a : int ;
     static b : int ;
+    static f : float ;
+    static arr : catList ;
 begin
     function main () : int
     begin
-        a := 5==5;
-        b := 1+2*(5+6);
-        b := (5==5)+(6==6);
+        b := arr[0]+arr[1];
+        a := 10;
+        b := 5+5;
+        f := 5.5+10;
     end
 end
