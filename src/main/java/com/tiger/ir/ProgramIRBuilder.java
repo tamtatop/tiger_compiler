@@ -221,8 +221,8 @@ public class ProgramIRBuilder implements IrGeneratorListener {
                 entries.add(new Label(label));
             }
         });
-        List<BackendVariable> lvars = localVariables.stream().map(BackendVariable::new).toList();
-        List<BackendVariable> args = arguments.stream().map(BackendVariable::new).toList();
+        List<BackendVariable> lvars = localVariables.stream().map(v -> new BackendVariable(v, false)).toList();
+        List<BackendVariable> args = arguments.stream().map(v -> new BackendVariable(v, false)).toList();
         functions.add(new Function(functionName, lvars, args, entries));
     }
 
@@ -233,7 +233,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
     }
 
     public ProgramIR getProgramIR() {
-        List<BackendVariable> statics = staticVariables.stream().map(BackendVariable::new).toList();
+        List<BackendVariable> statics = staticVariables.stream().map(v -> new BackendVariable(v, true)).toList();
         return new Program(programName, statics, functions);
     }
 }
