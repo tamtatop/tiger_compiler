@@ -1,24 +1,27 @@
-start_program err_func_return_array
-	static-int-list: _0_x
+start_program basic_loop_forloop
+	static-int-list:
 	static-float-list: 
 
 start_function main
 	int main()
-	int-list: _1_tmp_4, _1_tmp_1, _1_tmp_0, _1_tmp_3, _1_tmp_2
+	int-list: _2_a, _2_b, _2_c, _2_tmp_4, _2_tmp_1, _2_tmp_0, _2_tmp_3, _2_tmp_2
 	float-list: 
 	main:
-	assign, _1_tmp_0, 3,
-	assign, _1_tmp_1, 5,
-	assign, _1_tmp_3, 0,
-	assign, _1_tmp_2, 1,
-	_pow_1:
-	brgeq, _1_tmp_3, _1_tmp_1, _after_pow_2
-	mult, _1_tmp_2, _1_tmp_0, _1_tmp_2
-	add, _1_tmp_3, 1, _1_tmp_3
-	goto, _pow_1, ,
-	_after_pow_2:
-	assign, _0_x, _1_tmp_2,
-	assign, _1_tmp_4, 0,
-	return, _1_tmp_4, ,return , , , 
+	assign, _2_tmp_0, 1,
+	assign, _2_c, _2_tmp_0,
+	assign, _2_tmp_1, 3,
+	assign, _2_a, _2_tmp_1,
+	assign, _2_tmp_2, 4,
+	assign, _2_b, _2_tmp_2,
+	assign, _2_tmp_3, 1,
+	assign, _2_a, _2_tmp_3,
+	_for_1:
+	brgeq, _2_tmp_3, _2_b, _after_for_2
+	mult, _2_a, _2_a, _2_tmp_4
+	assign, _2_c, _2_tmp_4,
+	add, _2_a, 1, _2_a
+	goto, _for_1, ,
+	_after_for_2:
+	return,,,
 end_function main
 

@@ -1,18 +1,24 @@
-program err_func_return_array
+program basic_loop_forloop
 let
-    type intArray = array[10] of int;
-
-    static x: int;
-
 begin
 
-
-    function main(): int
+    function main() : int
     begin
-        x := 3**5;
+        let
+            var a : int;
+            var b : int;
+            var c : int;
+        begin
+            c := 1;
+            a := 3;
+            b := 4;
+            for a := 1 to b do
+                c := a * a;
+            enddo;
+            return c;
+        end
         return 0;
     end
 
 end
 
-/*Semantic Error: function return array type*/

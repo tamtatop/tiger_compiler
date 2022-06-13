@@ -5,7 +5,9 @@ import com.tiger.antlr.TigerParser;
 import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
 import com.tiger.ir.ProgramIRBuilder;
+import com.tiger.ir.interfaces.FunctionIR;
 import com.tiger.ir.interfaces.ProgramIR;
+import com.tiger.types.TypeStructure;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -55,6 +57,7 @@ public class Main {
         CancellableWriter irWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.irFilename);
         CancellableWriter cfgWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.cfgFilename);
         CancellableWriter livenessWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.livenessFilename);
+        CancellableWriter mipsWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.mipsFilename);
 
         TigerLexer lexer = new TigerLexer(charStream);
         lexer.removeErrorListeners();
@@ -89,7 +92,61 @@ public class Main {
 
         ProgramIR finalIr = listener.getProgramIR();
         System.out.println("program name: " + finalIr.getProgramName());
+
+        CompilerBackend.runBackend(finalIr, cfgWriter, livenessWriter, mipsWriter);
     }
 
 
 }
+
+
+class CompilerBackend {
+
+    public static void runBackend(ProgramIR ir,  CancellableWriter cfgWriter, CancellableWriter livenessWriter, CancellableWriter mipsWriter) {
+
+    }
+
+}
+
+interface RegisterAllocator {
+
+    void runAllocationAlgorithm(ProgramIR ir);
+
+}
+
+class NaiveRegisterAllocator implements RegisterAllocator{
+
+    @Override
+    public void runAllocationAlgorithm(ProgramIR ir) {
+        for (FunctionIR functionIR: ir.getFunctions()) {
+            for (BackendVariable localVariable: functionIR.getLocalVariables()){
+                localVariable.spill();
+            }
+        }
+    }
+}
+
+class MipsGenerator {
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
