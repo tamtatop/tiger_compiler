@@ -15,12 +15,14 @@ class TigerArgs {
     public RegisterAllocation allocationStrategy;
     public String livenessFilename;
     public String cfgFilename;
+    public String mipsFilename;
 
     public TigerArgs(String[] args) {
         int i = 0;
         boolean lexerOut = false;
         boolean parserOut = false;
         boolean symbolTableOut = false;
+        boolean mipsOut = false;
         boolean irOut = false;
         boolean cfgOut = false;
         boolean livenessOut = false;
@@ -51,11 +53,13 @@ class TigerArgs {
                         allocation = RegisterAllocation.INTRABLOCK;
                 case "-g" ->
                         allocation = RegisterAllocation.BRIGGS;
+                case "--mips" ->
+                        mipsOut = true;
             }
         }
 
         if(i!=args.length || this.inputFilename == null){
-            System.err.println("Usage: <program> -i filename [-l] [-p] [--st] [--ir] [--cfg] [--liveness] [-n] [-b] [-g]");
+            System.err.println("Usage: <program> -i filename [-l] [-p] [--st] [--ir] [--cfg] [--liveness] [-n] [-b] [-g] [--mips]");
             System.err.println("You must provide input file");
             System.exit(1);
         }
@@ -77,6 +81,23 @@ class TigerArgs {
         }
         if(livenessOut) {
             this.livenessFilename = baseFilename + ".liveness";
+        }
+        if(mipsOut) {
+            if (allocation == null) {
+                // default allocation strategy
+                allocation = RegisterAllocation.NAIVE;
+            }
+            switch (allocation) {
+                case NAIVE -> {
+                    this.mipsFilename = baseFilename + ".naive.s";
+                }
+                case INTRABLOCK -> {
+                    this.mipsFilename = baseFilename + ".ib.s";
+                }
+                case BRIGGS -> {
+                    this.mipsFilename = baseFilename + ".briggs.s";
+                }
+            }
         }
         this.allocationStrategy = allocation;
         System.out.println("input fname:" + this.inputFilename);
