@@ -2,6 +2,8 @@ package com.tiger;
 
 import com.tiger.antlr.TigerParser;
 import com.tiger.io.CancellableWriter;
+import com.tiger.ir.IrGenerator;
+import com.tiger.ir.IrGeneratorListener;
 import com.tiger.symbols.*;
 import com.tiger.types.*;
 
@@ -9,7 +11,7 @@ import java.util.*;
 
 import static java.lang.Integer.parseInt;
 
-public class SemanticChecker {
+public class CompilerFront {
     SymbolTable symbolTable;
     IrGenerator ir;
     SemanticErrorLogger errorLogger;
@@ -18,9 +20,9 @@ public class SemanticChecker {
     FunctionSymbol curFunc;
     boolean didReturn;
 
-    public SemanticChecker(CancellableWriter symbolTableWriter, CancellableWriter irWriter, SemanticErrorLogger errorLogger) {
+    public CompilerFront(CancellableWriter symbolTableWriter, CancellableWriter irWriter, SemanticErrorLogger errorLogger, IrGeneratorListener listener) {
         this.symbolTable = new SymbolTable(symbolTableWriter);
-        this.ir = new IrGenerator(irWriter);
+        this.ir = new IrGenerator(irWriter, listener);
         this.errorLogger = errorLogger;
         this.functionsDone = new HashSet<>();
         functionsDone.add("printi");

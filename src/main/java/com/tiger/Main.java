@@ -4,6 +4,8 @@ import com.tiger.antlr.TigerLexer;
 import com.tiger.antlr.TigerParser;
 import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
+import com.tiger.ir.ProgramIRBuilder;
+import com.tiger.ir.interfaces.ProgramIR;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -72,9 +74,10 @@ public class Main {
         // Experiments
         lexer.reset();
         parser.reset();
-        SemanticChecker semanticChecker = new SemanticChecker(symbolTableWriter, irWriter, errorLogger);
+        ProgramIRBuilder listener = new ProgramIRBuilder();
+        CompilerFront compilerFront = new CompilerFront(symbolTableWriter, irWriter, errorLogger, listener);
 
-        semanticChecker.visitTigerProgram(parser.tiger_program());
+        compilerFront.visitTigerProgram(parser.tiger_program());
 
         if(errorLogger.anyError()) {
             symbolTableWriter.cancel();
@@ -83,6 +86,9 @@ public class Main {
         }
         symbolTableWriter.commit();
         irWriter.commit();
+
+        ProgramIR finalIr = listener.getProgramIR();
+        System.out.println("program name: " + finalIr.getProgramName());
     }
 
 

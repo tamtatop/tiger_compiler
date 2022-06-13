@@ -1,5 +1,7 @@
-package com.tiger;
+package com.tiger.ir;
 
+import com.tiger.NakedVariable;
+import com.tiger.Value;
 import com.tiger.io.CancellableWriter;
 import com.tiger.symbols.FunctionSymbol;
 import com.tiger.symbols.Symbol;
@@ -22,11 +24,13 @@ public class IrGenerator {
     // common scope for whole function
     private ArrayList<NakedVariable> funcVariables;
     private ArrayList<NakedVariable> funcParams;
+    private final IrGeneratorListener listener;
 
     private int labelCounter;
 
-    public IrGenerator(CancellableWriter writer) {
+    public IrGenerator(CancellableWriter writer, IrGeneratorListener listener) {
         this.writer = writer;
+        this.listener = listener;
         this.labelCounter = 0;
         this.staticIr = new StringWriter(0);
     }
@@ -73,6 +77,9 @@ public class IrGenerator {
         writer.write(String.format("start_program %s\n", programName));
         generateVariableLists("static-", variables);
         writer.write("\n");
+        if(listener!=null){
+            listener.genProgram(programName, variables);
+        }
     }
 
 
@@ -228,6 +235,7 @@ public class IrGenerator {
         writer.write(String.format("start_function %s\n", curFunction.name));
 
         String retType;
+        StringBuilder fullIrBody = new StringBuilder();
         if(curFunction.returnType == null){
             retType = "void";
         } else {
@@ -241,21 +249,24 @@ public class IrGenerator {
         writer.write("\t");
         if(curFunction.name.equals("main")){
             writer.write(staticIr.toString().replace("\n", "\n\t"));
+            fullIrBody.append(staticIr.toString().replace("\n", "\n\t"));
         }
+        emitReturn(null); // always add return
         writer.write(funcIr.toString().replace("\n", "\n\t"));
-        if(curFunction.returnType == null)
-            writer.write("return , , , \n");
-        else
-            writer.write("return , , , \n");
+        fullIrBody.append(funcIr.toString().replace("\n", "\n\t"));
+
 
         writer.write(String.format("end_function %s\n\n", curFunction.name));
+        if(listener!=null){
+            listener.genFunction(curFunction.name, funcVariables, funcParams, fullIrBody.toString());
+        }
     }
 
     public void emitReturn(NakedVariable retVal) {
         if(retVal == null){
-            funcIr.write("return , , ,");
+            funcIr.write("return , , ,\n");
         } else {
-            funcIr.write(String.format("return, %s, ,", mangledName(retVal)));
+            funcIr.write(String.format("return, %s, ,\n", mangledName(retVal)));
         }
     }
     private String callArgs(ArrayList<NakedVariable> args) {
@@ -276,5 +287,4 @@ public class IrGenerator {
     public void emitCallR(FunctionSymbol func, ArrayList<NakedVariable> args, NakedVariable target) {
         funcIr.write(String.format("call %s, %s, %s\n", mangledName(target), func.name, callArgs(args)));
     }
-
 }
