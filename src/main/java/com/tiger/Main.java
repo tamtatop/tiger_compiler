@@ -51,6 +51,8 @@ public class Main {
         CancellableWriter parserWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.parserFilename);
         CancellableWriter symbolTableWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.symbolTableFilename);
         CancellableWriter irWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.irFilename);
+        CancellableWriter cfgWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.cfgFilename);
+        CancellableWriter livenessWriter = IOUtils.writerOrSinkFromFilename(tigerArgs.livenessFilename);
 
         TigerLexer lexer = new TigerLexer(charStream);
         lexer.removeErrorListeners();
