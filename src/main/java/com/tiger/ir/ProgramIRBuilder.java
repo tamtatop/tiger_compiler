@@ -1,5 +1,6 @@
 package com.tiger.ir;
 
+import com.tiger.BackendVariable;
 import com.tiger.NakedVariable;
 import com.tiger.ir.interfaces.*;
 
@@ -12,11 +13,11 @@ import java.util.Objects;
 public class ProgramIRBuilder implements IrGeneratorListener {
     private static class Function implements FunctionIR {
         String name;
-        List<NakedVariable> locals;
-        List<NakedVariable> args;
+        List<BackendVariable> locals;
+        List<BackendVariable> args;
         List<IRentry> entries;
 
-        public Function(String name, List<NakedVariable> locals, List<NakedVariable> args, List<IRentry> entries) {
+        public Function(String name, List<BackendVariable> locals, List<BackendVariable> args, List<IRentry> entries) {
             this.name = name;
             this.locals = locals;
             this.args = args;
@@ -29,12 +30,12 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         }
 
         @Override
-        public List<NakedVariable> getLocalVariables() {
+        public List<BackendVariable> getLocalVariables() {
             return locals;
         }
 
         @Override
-        public List<NakedVariable> getArguments() {
+        public List<BackendVariable> getArguments() {
             return args;
         }
 
@@ -46,10 +47,10 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
     private static class Program implements ProgramIR {
         String name;
-        List<NakedVariable> statics;
+        List<BackendVariable> statics;
         List<FunctionIR> functions;
 
-        public Program(String name, List<NakedVariable> statics, List<FunctionIR> functions) {
+        public Program(String name, List<BackendVariable> statics, List<FunctionIR> functions) {
             this.name = name;
             this.statics = statics;
             this.functions = functions;
@@ -61,7 +62,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         }
 
         @Override
-        public List<NakedVariable> getStaticVariables() {
+        public List<BackendVariable> getStaticVariables() {
             return statics;
         }
 
@@ -220,7 +221,9 @@ public class ProgramIRBuilder implements IrGeneratorListener {
                 entries.add(new Label(label));
             }
         });
-        functions.add(new Function(functionName, localVariables, arguments, entries));
+        List<BackendVariable> lvars = localVariables.stream().map(BackendVariable::new).toList();
+        List<BackendVariable> args = arguments.stream().map(BackendVariable::new).toList();
+        functions.add(new Function(functionName, lvars, args, entries));
     }
 
     @Override
@@ -230,6 +233,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
     }
 
     public ProgramIR getProgramIR() {
-        return new Program(programName, staticVariables, functions);
+        List<BackendVariable> statics = staticVariables.stream().map(BackendVariable::new).toList();
+        return new Program(programName, statics, functions);
     }
 }

@@ -1,15 +1,15 @@
 package com.tiger.ir.interfaces;
 
-import com.tiger.NakedVariable;
+import com.tiger.BackendVariable;
 
 import java.util.List;
 
 public interface FunctionIR {
     String getFunctionName();
 
-    List<NakedVariable> getLocalVariables();
+    List<BackendVariable> getLocalVariables();
 
-    List<NakedVariable> getArguments();
+    List<BackendVariable> getArguments();
 
     List<IRentry> getBody();
 }
