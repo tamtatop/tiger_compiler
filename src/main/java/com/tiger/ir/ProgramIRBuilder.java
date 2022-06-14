@@ -4,7 +4,10 @@ import com.tiger.BackendVariable;
 import com.tiger.NakedVariable;
 import com.tiger.ir.interfaces.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 
 
 public class ProgramIRBuilder implements IrGeneratorListener {
@@ -55,7 +58,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
     private static class Program implements ProgramIR {
         String name;
-        HashMap<String, BackendVariable> statics  = new HashMap<>();
+        HashMap<String, BackendVariable> statics = new HashMap<>();
         HashMap<String, FunctionIR> functions = new HashMap<>();
 
         public Program(String name, List<BackendVariable> statics) {
@@ -102,17 +105,27 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public List<String> reads() {
+            // TODO: implement
             return null;
         }
 
         @Override
         public List<String> writes() {
+            // TODO: implement
             return null;
         }
 
+
+        /**
+         * add, x, y, z
+         * 0 -> add
+         * 1 -> x
+         * 2 -> y
+         * 3 -> z
+         */
         @Override
         public String getIthCode(int i) {
-            return null;
+            return args.get(i);
         }
 
         @Override
@@ -137,10 +150,10 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             if ("call".equals(op)) {
                 return IRInstructionType.CALL;
             }
-            if("array_store".equals(op)){
+            if ("array_store".equals(op)) {
                 return IRInstructionType.ARRAYSTORE;
             }
-            if("array_load".equals(op)){
+            if ("array_load".equals(op)) {
                 return IRInstructionType.ARRAYLOAD;
             }
             throw new IllegalStateException("unknown op");
@@ -213,10 +226,10 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             if (!line.contains(":")) {
                 int opEndIdx = line.indexOf(",");
                 String op = line.substring(0, opEndIdx);
-                List<String> args = Arrays.stream(line.substring(opEndIdx + 1).trim().split(",")).map(String::trim).toList();
+                List<String> args = Arrays.stream(line.trim().split(",")).map(String::trim).toList();
                 entries.add(new Instruction(op, args));
             } else {
-                String label = line.substring(0, line.length()-1);
+                String label = line.substring(0, line.length() - 1);
                 entries.add(new Label(label));
             }
         });
