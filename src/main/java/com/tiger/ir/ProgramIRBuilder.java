@@ -4,24 +4,27 @@ import com.tiger.BackendVariable;
 import com.tiger.NakedVariable;
 import com.tiger.ir.interfaces.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 
 public class ProgramIRBuilder implements IrGeneratorListener {
+
+
     private static class Function implements FunctionIR {
         String name;
-        List<BackendVariable> locals;
+        HashMap<String, BackendVariable> locals = new HashMap<>();
         List<BackendVariable> args;
         List<IRentry> entries;
+        ProgramIR programIR;
 
-        public Function(String name, List<BackendVariable> locals, List<BackendVariable> args, List<IRentry> entries) {
+        public Function(String name, List<BackendVariable> locals, List<BackendVariable> args, List<IRentry> entries, ProgramIR program) {
             this.name = name;
-            this.locals = locals;
+            for (BackendVariable local : locals) {
+                this.locals.put(local.name, local);
+            }
             this.args = args;
             this.entries = entries;
+            this.programIR = program;
         }
 
         @Override
@@ -31,7 +34,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public List<BackendVariable> getLocalVariables() {
-            return locals;
+            return locals.values().stream().toList();
         }
 
         @Override
@@ -43,17 +46,23 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         public List<IRentry> getBody() {
             return entries;
         }
+
+        @Override
+        public BackendVariable fetchVariableByName(String name) {
+            return locals.get(name) != null ? locals.get(name) : programIR.getVariableByName(name);
+        }
     }
 
     private static class Program implements ProgramIR {
         String name;
-        List<BackendVariable> statics;
-        List<FunctionIR> functions;
+        HashMap<String, BackendVariable> statics  = new HashMap<>();
+        HashMap<String, FunctionIR> functions = new HashMap<>();
 
-        public Program(String name, List<BackendVariable> statics, List<FunctionIR> functions) {
+        public Program(String name, List<BackendVariable> statics) {
             this.name = name;
-            this.statics = statics;
-            this.functions = functions;
+            for (BackendVariable aStatic : statics) {
+                this.statics.put(aStatic.name, aStatic);
+            }
         }
 
         @Override
@@ -63,23 +72,22 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public List<BackendVariable> getStaticVariables() {
-            return statics;
+            return statics.values().stream().toList();
+        }
+
+        @Override
+        public BackendVariable getVariableByName(String name) {
+            return statics.get(name);
         }
 
         @Override
         public List<FunctionIR> getFunctions() {
-            return functions;
+            return functions.values().stream().toList();
         }
 
-        // TODO: use hashtable for this
         @Override
         public FunctionIR getFunctionByName(String name) {
-            for (FunctionIR function : functions) {
-                if (Objects.equals(function.getFunctionName(), name)) {
-                    return function;
-                }
-            }
-            return null;
+            return functions.get(name);
         }
     }
 
@@ -193,12 +201,11 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         }
     }
 
-    ArrayList<FunctionIR> functions = new ArrayList<>();
-    String programName;
-    List<NakedVariable> staticVariables;
+    private Program program;
 
     @Override
     public void genFunction(String functionName, List<NakedVariable> localVariables, List<NakedVariable> arguments, String irBody) {
+
         ArrayList<IRentry> entries = new ArrayList<>();
         irBody.lines().forEach(line -> {
             line = line.trim();
@@ -207,33 +214,23 @@ public class ProgramIRBuilder implements IrGeneratorListener {
                 int opEndIdx = line.indexOf(",");
                 String op = line.substring(0, opEndIdx);
                 List<String> args = Arrays.stream(line.substring(opEndIdx + 1).trim().split(",")).map(String::trim).toList();
-                System.out.println(op);
-                for (String arg : args) {
-                    System.out.print(arg + " :: ");
-                }
-                System.out.println();
-                System.out.println();
                 entries.add(new Instruction(op, args));
             } else {
-                System.out.println("label:");
-                System.out.println(line);
                 String label = line.substring(0, line.length()-1);
                 entries.add(new Label(label));
             }
         });
         List<BackendVariable> lvars = localVariables.stream().map(v -> new BackendVariable(v, false)).toList();
         List<BackendVariable> args = arguments.stream().map(v -> new BackendVariable(v, false)).toList();
-        functions.add(new Function(functionName, lvars, args, entries));
+        this.program.functions.put(functionName, new Function(functionName, lvars, args, entries, this.program));
     }
 
     @Override
     public void genProgram(String programName, List<NakedVariable> staticVariables) {
-        this.programName = programName;
-        this.staticVariables = staticVariables;
+        this.program = new Program(programName, staticVariables.stream().map(v -> new BackendVariable(v, true)).toList());
     }
 
     public ProgramIR getProgramIR() {
-        List<BackendVariable> statics = staticVariables.stream().map(v -> new BackendVariable(v, true)).toList();
-        return new Program(programName, statics, functions);
+        return this.program;
     }
 }

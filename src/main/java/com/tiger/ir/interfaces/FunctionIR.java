@@ -12,4 +12,6 @@ public interface FunctionIR {
     List<BackendVariable> getArguments();
 
     List<IRentry> getBody();
+
+    BackendVariable fetchVariableByName(String name);
 }

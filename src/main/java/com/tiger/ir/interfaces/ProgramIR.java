@@ -11,6 +11,8 @@ public interface ProgramIR {
 
     List<BackendVariable> getStaticVariables();
 
+    BackendVariable getVariableByName(String name);
+
     List<FunctionIR> getFunctions();
 
     FunctionIR getFunctionByName(String name);
