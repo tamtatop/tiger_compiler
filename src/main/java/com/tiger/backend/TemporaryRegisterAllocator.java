@@ -1,5 +1,7 @@
 package com.tiger.backend;
 
+import com.tiger.types.BaseType;
+
 import java.util.Stack;
 
 public class TemporaryRegisterAllocator {
@@ -18,11 +20,18 @@ public class TemporaryRegisterAllocator {
         }
     }
 
-    String popInt() {
+    public String popInt() {
         return itemps.pop();
     }
 
-    String popFloat() {
+    public String popFloat() {
         return ftemps.pop();
+    }
+
+    public String popTempOfType(BaseType type) {
+        return switch (type) {
+            case INT -> itemps.pop();
+            case FLOAT -> ftemps.pop();
+        };
     }
 }

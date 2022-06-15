@@ -1,5 +1,6 @@
 package com.tiger;
 
+import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
@@ -54,20 +55,14 @@ public class BackendVariable {
         return typeStructure.isArray() ? typeStructure.arraySize * WORD_SIZE : WORD_SIZE;
     }
 
-    public String getAssignedRegister() throws BackendException {
-        if (this.allocated && this.registerIndex != -1) {
-            if (this.typeStructure.isArray()) {
-                throw new BackendException("Array BackendVariable can't have assigned register");
-            }
-            if (this.typeStructure.base == BaseType.INT) {
-                return ALLOCATABLE_INT_REGISTERS[this.registerIndex];
-            } else {
-                return ALLOCATABLE_FLOAT_REGISTERS[this.registerIndex];
-            }
+    public String getAssignedRegister() {
+        assert this.allocated : "BackendVariable is not yet allocated";
+        assert this.registerIndex != -1 : "BackendVariable is not allocated in a register";
+        if (this.typeStructure.base == BaseType.INT) {
+            return ALLOCATABLE_INT_REGISTERS[this.registerIndex];
+        } else {
+            return ALLOCATABLE_FLOAT_REGISTERS[this.registerIndex];
         }
-        if (!this.allocated)
-            throw new BackendException("BackendVariable is not yet allocated");
-        throw new BackendException("BackendVariable is not allocated in a register");
     }
 
 }

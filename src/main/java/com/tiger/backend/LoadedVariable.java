@@ -1,5 +1,6 @@
 package com.tiger.backend;
 
+import com.tiger.BackendException;
 import com.tiger.BackendVariable;
 
 public class LoadedVariable {
@@ -8,18 +9,25 @@ public class LoadedVariable {
 
     public LoadedVariable(BackendVariable backing, TemporaryRegisterAllocator tempAllocator) {
         this.backing = backing;
+        assert backing.allocated;
+        assert !backing.typeStructure.isArray();
+        if(backing.isSpilled) {
+            this.loadedRegister = tempAllocator.popTempOfType(backing.typeStructure.base);
+        } else {
+            this.loadedRegister = backing.getAssignedRegister();
+        }
     }
 
-    String loadAssembly() {
+    public String loadAssembly() {
         // assembly to load variable value into liftedRegister
         return "";
     }
 
-    String getRegister() {
+    public String getRegister() {
         return loadedRegister;
     }
 
-    String flushAssembly() {
+    public String flushAssembly() {
         return "";
     }
 }
