@@ -147,6 +147,7 @@ class MIPSGenerator {
         BackendVariable c = functionIR.fetchVariableByName(cName);
 
         // TODO: handle immediate binops eg: addi
+        // TODO: handle floats in ops eg: add.s
 
         LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
         String aRegister = aLoaded.getRegister();
@@ -158,6 +159,8 @@ class MIPSGenerator {
 
         LoadedVariable cLoaded = new LoadedVariable(c, tempRegisterAllocator);
         String cRegister = cLoaded.getRegister();
+
+        if (!c.typeStructure.isBaseInt()) { binop += ".s"; }
 
         writer.write(String.format("%s %s, %s, %s", binop, cRegister, aRegister, bRegister));
         writer.write(cLoaded.flushAssembly());
@@ -218,6 +221,15 @@ class MIPSGenerator {
                     case BRANCH -> {
                     }
                     case RETURN -> {
+                        String returnVarName = instr.getIthCode(1);
+                        if (!returnVarName.equals("")) {
+                            BackendVariable retVar = functionIR.fetchVariableByName(returnVarName);
+                            String retVarRegister = retVar.getAssignedRegister();
+                            writer.write(String.format("move, $v0, %s\n", retVarRegister));
+                        }
+
+                        writer.write(String.format("lw $ra, %d($sp)\n", spOffset - 4));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
                     }
                     case CALL -> {
                     }
