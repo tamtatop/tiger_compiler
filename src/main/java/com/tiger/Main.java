@@ -2,6 +2,8 @@ package com.tiger;
 
 import com.tiger.antlr.TigerLexer;
 import com.tiger.antlr.TigerParser;
+import com.tiger.backend.LoadedVariable;
+import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
 import com.tiger.ir.ProgramIRBuilder;
@@ -135,7 +137,33 @@ class MIPSGenerator {
         this.writer = writer;
     }
 
-    public void translateFunction(FunctionIR functionIR){
+    public void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
+        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+        String aName = instr.getIthCode(1);
+        String bName = instr.getIthCode(2);
+        String cName = instr.getIthCode(3);
+        BackendVariable a = functionIR.fetchVariableByName(aName);
+        BackendVariable b = functionIR.fetchVariableByName(bName);
+        BackendVariable c = functionIR.fetchVariableByName(cName);
+
+        // TODO: handle immediate binops eg: addi
+
+        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+        String aRegister = aLoaded.getRegister();
+        writer.write(aLoaded.loadAssembly());
+
+        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+        String bRegister = bLoaded.getRegister();
+        writer.write(bLoaded.loadAssembly());
+
+        LoadedVariable cLoaded = new LoadedVariable(c, tempRegisterAllocator);
+        String cRegister = cLoaded.getRegister();
+
+        writer.write(String.format("%s %s, %s, %s", binop, cRegister, aRegister, bRegister));
+        writer.write(cLoaded.flushAssembly());
+    }
+
+    public void translateFunction(FunctionIR functionIR) throws BackendException {
         functionIR.getBody();
 
         int spOffset = 0;
@@ -166,31 +194,22 @@ class MIPSGenerator {
                     case BINOP -> {
                         switch (instr.getIthCode(0)) {
                             case "add" -> {
-                                String aName = instr.getIthCode(1);
-                                String bName = instr.getIthCode(2);
-                                BackendVariable a = functionIR.fetchVariableByName(aName);
-                                BackendVariable b = functionIR.fetchVariableByName(bName);
-
-                                // TODO: handle floats
-                                // TODO: handle immediate binops eg: addi
-                                String aRegister = "";
-                                if (a.isSpilled) {
-                                    aRegister = "t0";
-                                    writer.write(String.format("lw $t0, %d($sp)", a.stackOffset));
-                                } else {
-                                    aRegister = a.getRegister();
-                                }
-                                String bRegister = "";
-                                if (b.isSpilled) {
-                                    bRegister = "t0";
-                                    writer.write(String.format("lw $t1, %d($sp)", b.stackOffset));
-                                } else {
-                                    bRegister = b.getRegister();
-                                }
-                                writer.write(String.format("add $t2, %s, %s", aRegister, bRegister));
+                                translateBinaryOperation("add", instr, functionIR);
                             }
                             case "sub" -> {
-
+                                translateBinaryOperation("sub", instr, functionIR);
+                            }
+                            case "mult" -> {
+                                translateBinaryOperation("mul", instr, functionIR);
+                            }
+                            case "div" -> {
+                                translateBinaryOperation("div", instr, functionIR);
+                            }
+                            case "and" -> {
+                                translateBinaryOperation("and", instr, functionIR);
+                            }
+                            case "or" -> {
+                                translateBinaryOperation("or", instr, functionIR);
                             }
                         }
                     }
@@ -212,11 +231,8 @@ class MIPSGenerator {
 
             }
         }
-
-
     }
 }
-
 
 
 
