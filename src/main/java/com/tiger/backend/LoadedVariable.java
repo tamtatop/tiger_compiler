@@ -3,6 +3,7 @@ package com.tiger.backend;
 import com.tiger.BackendException;
 import com.tiger.BackendVariable;
 
+// TODO: maybe extend this abstraction to immediate values as well
 public class LoadedVariable {
     String loadedRegister;
     BackendVariable backing;
@@ -11,7 +12,7 @@ public class LoadedVariable {
         this.backing = backing;
         assert backing.allocated;
         assert !backing.typeStructure.isArray();
-        if(backing.isSpilled) {
+        if (backing.isSpilled) {
             this.loadedRegister = tempAllocator.popTempOfType(backing.typeStructure.base);
         } else {
             this.loadedRegister = backing.getAssignedRegister();
@@ -19,8 +20,12 @@ public class LoadedVariable {
     }
 
     public String loadAssembly() {
-        // assembly to load variable value into liftedRegister
-        return "";
+        if (!this.backing.isSpilled) return "";
+
+        return switch (backing.typeStructure.base) {
+            case INT -> String.format("lw %s, %d($sp)\n", loadedRegister, backing.stackOffset);
+            case FLOAT -> String.format("l.s %s, %d($sp)\n", loadedRegister, backing.stackOffset);
+        };
     }
 
     public String getRegister() {
@@ -28,6 +33,11 @@ public class LoadedVariable {
     }
 
     public String flushAssembly() {
-        return "";
+        if (!this.backing.isSpilled) return "";
+
+        return switch (backing.typeStructure.base) {
+            case INT -> String.format("sw %s, %d($sp)\n", loadedRegister, backing.stackOffset);
+            case FLOAT -> String.format("s.s %s, %d($sp)\n", loadedRegister, backing.stackOffset);
+        };
     }
 }

@@ -7,31 +7,31 @@ import java.util.Stack;
 public class TemporaryRegisterAllocator {
 
     private final static String[] INT_TEMPS = {"t0", "t1", "t2", "t3"};
-    private final static String[] FLOAT_TEMPS = {"t0", "t1", "t2", "t3"};
-    private final Stack<String> itemps = new Stack<>();
-    private final Stack<String> ftemps = new Stack<>();
+    private final static String[] FLOAT_TEMPS = {"f4", "f5", "f6", "f7"};
+    private final Stack<String> intTemps = new Stack<>();
+    private final Stack<String> floatTemps = new Stack<>();
 
     public TemporaryRegisterAllocator() {
         for (String intTemp : INT_TEMPS) {
-            itemps.push(intTemp);
+            intTemps.push(intTemp);
         }
         for (String floatTemp : FLOAT_TEMPS) {
-            ftemps.push(floatTemp);
+            floatTemps.push(floatTemp);
         }
     }
 
     public String popInt() {
-        return itemps.pop();
+        return intTemps.pop();
     }
 
     public String popFloat() {
-        return ftemps.pop();
+        return floatTemps.pop();
     }
 
     public String popTempOfType(BaseType type) {
         return switch (type) {
-            case INT -> itemps.pop();
-            case FLOAT -> ftemps.pop();
+            case INT -> intTemps.pop();
+            case FLOAT -> floatTemps.pop();
         };
     }
 }
