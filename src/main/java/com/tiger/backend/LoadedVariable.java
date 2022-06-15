@@ -15,7 +15,7 @@ public class LoadedVariable {
         return "";
     }
 
-    String getReg() {
+    String getRegister() {
         return loadedRegister;
     }
 

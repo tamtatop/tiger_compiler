@@ -18,11 +18,11 @@ public class TemporaryRegisterAllocator {
         }
     }
 
-    String popi() {
+    String popInt() {
         return itemps.pop();
     }
 
-    String popf() {
+    String popFloat() {
         return ftemps.pop();
     }
 }
