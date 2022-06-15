@@ -1,8 +1,13 @@
 package com.tiger;
 
+import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
 public class BackendVariable {
+    // TODO: add more here
+    public String[] ALLOCATABLE_INT_REGISTERS = new String[]{"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};
+    public String[] ALLOCATABLE_FLOAT_REGISTERS = new String[]{"$f20", "$f21", "$f22", "$f23", "$f24", "$f25"};
+
     public String name;
     public TypeStructure typeStructure;
     public boolean isStatic;
@@ -14,6 +19,7 @@ public class BackendVariable {
         this.name = nakedBase.name;
         this.typeStructure = nakedBase.typeStructure;
         this.allocated = false;
+        this.registerIndex = -1;
         this.isStatic = isStatic;
     }
 
@@ -38,6 +44,22 @@ public class BackendVariable {
 
     public boolean isStatic() {
         return isStatic;
+    }
+
+    public String getAssignedRegister() throws BackendException {
+        if (this.allocated && this.registerIndex != -1) {
+            if (this.typeStructure.isArray()) {
+                throw new BackendException("Array BackendVariable can't have assigned register");
+            }
+            if (this.typeStructure.base == BaseType.INT) {
+                return ALLOCATABLE_INT_REGISTERS[this.registerIndex];
+            } else {
+                return ALLOCATABLE_FLOAT_REGISTERS[this.registerIndex];
+            }
+        }
+        if (!this.allocated)
+            throw new BackendException("BackendVariable is not yet allocated");
+        throw new BackendException("BackendVariable is not allocated in a register");
     }
 
 }
