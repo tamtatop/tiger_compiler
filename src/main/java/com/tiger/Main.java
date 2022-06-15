@@ -6,6 +6,8 @@ import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
 import com.tiger.ir.ProgramIRBuilder;
 import com.tiger.ir.interfaces.FunctionIR;
+import com.tiger.ir.interfaces.IRInstruction;
+import com.tiger.ir.interfaces.IRentry;
 import com.tiger.ir.interfaces.ProgramIR;
 import com.tiger.types.TypeStructure;
 import org.antlr.v4.runtime.CharStream;
@@ -126,8 +128,93 @@ class NaiveRegisterAllocator implements RegisterAllocator{
     }
 }
 
-class MipsGenerator {
+class MIPSGenerator {
+    private final CancellableWriter writer;
 
+    public MIPSGenerator(CancellableWriter writer) {
+        this.writer = writer;
+    }
+
+    public void translateFunction(FunctionIR functionIR){
+        functionIR.getBody();
+
+        int spOffset = 0;
+        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
+            if (localVariable.isSpilled) {
+                localVariable.stackOffset = spOffset;
+                spOffset = localVariable.sizeInBytes();
+            }
+        }
+        // for $ra
+        spOffset += 4;
+
+        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
+            if (localVariable.isSpilled) {
+                writer.write(String.format("sw $, %d($sp)\n", localVariable.stackOffset));
+            }
+        }
+        writer.write(String.format("sw $ra, %d($sp)\n", spOffset - 4));
+
+        for (IRentry iRentry : functionIR.getBody()) {
+            if (iRentry.isInstruction()) {
+                IRInstruction instr = iRentry.asInstruction();
+                switch (instr.getType()) {
+                    case ASSIGN -> {
+
+                    }
+                    case BINOP -> {
+                        switch (instr.getIthCode(0)) {
+                            case "add" -> {
+                                String aName = instr.getIthCode(1);
+                                String bName = instr.getIthCode(2);
+                                BackendVariable a = functionIR.fetchVariableByName(aName);
+                                BackendVariable b = functionIR.fetchVariableByName(bName);
+
+                                // TODO: handle floats
+                                // TODO: handle immediate binops eg: addi
+                                String aRegister = "";
+                                if (a.isSpilled) {
+                                    aRegister = "t0";
+                                    writer.write(String.format("lw $t0, %d($sp)", a.stackOffset));
+                                } else {
+                                    aRegister = a.getRegister();
+                                }
+                                String bRegister = "";
+                                if (b.isSpilled) {
+                                    bRegister = "t0";
+                                    writer.write(String.format("lw $t1, %d($sp)", b.stackOffset));
+                                } else {
+                                    bRegister = b.getRegister();
+                                }
+                                writer.write(String.format("add $t2, %s, %s", aRegister, bRegister));
+                            }
+                            case "sub" -> {
+
+                            }
+                        }
+                    }
+                    case GOTO -> {
+                    }
+                    case BRANCH -> {
+                    }
+                    case RETURN -> {
+                    }
+                    case CALL -> {
+                    }
+                    case ARRAYSTORE -> {
+                    }
+                    case ARRAYLOAD -> {
+                    }
+                }
+
+            } else if(iRentry.isLabel()) {
+
+            }
+        }
+
+
+    }
 }
 
 

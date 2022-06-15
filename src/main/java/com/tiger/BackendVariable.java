@@ -3,7 +3,10 @@ package com.tiger;
 import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
+
 public class BackendVariable {
+    final int WORD_SIZE = 4;
+
     // TODO: add more here
     public String[] ALLOCATABLE_INT_REGISTERS = new String[]{"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};
     public String[] ALLOCATABLE_FLOAT_REGISTERS = new String[]{"$f20", "$f21", "$f22", "$f23", "$f24", "$f25"};
@@ -14,6 +17,7 @@ public class BackendVariable {
     public int registerIndex;
     public boolean isSpilled;
     public boolean allocated;
+    public int stackOffset;
 
     public BackendVariable(NakedVariable nakedBase, boolean isStatic) {
         this.name = nakedBase.name;
@@ -44,6 +48,10 @@ public class BackendVariable {
 
     public boolean isStatic() {
         return isStatic;
+    }
+
+    public int sizeInBytes(){
+        return typeStructure.isArray() ? typeStructure.arraySize * WORD_SIZE : WORD_SIZE;
     }
 
     public String getAssignedRegister() throws BackendException {
