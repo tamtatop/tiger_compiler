@@ -247,6 +247,8 @@ class MIPSGenerator {
 
                         writer.write(String.format("lw $ra, %d($sp)\n", spOffset - 4));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
+                        writer.write("jr $ra\n");
+
                     }
                     case CALL -> {
                     }
