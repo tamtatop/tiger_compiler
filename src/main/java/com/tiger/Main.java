@@ -192,6 +192,23 @@ class MIPSGenerator {
                 IRInstruction instr = iRentry.asInstruction();
                 switch (instr.getType()) {
                     case ASSIGN -> {
+                        // a := b
+
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+                        String aName = instr.getIthCode(1);
+                        String bName = instr.getIthCode(2);
+                        BackendVariable a = functionIR.fetchVariableByName(aName);
+                        BackendVariable b = functionIR.fetchVariableByName(bName);
+
+                        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+                        String aRegister = aLoaded.getRegister();
+
+                        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+                        String bRegister = bLoaded.getRegister();
+                        writer.write(bLoaded.loadAssembly());
+
+                        writer.write(String.format("move %s, %s", aRegister, bRegister));
+                        writer.write(aLoaded.flushAssembly());
 
                     }
                     case BINOP -> {
