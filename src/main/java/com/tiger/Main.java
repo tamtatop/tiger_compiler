@@ -19,6 +19,7 @@ import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -251,6 +252,32 @@ class MIPSGenerator {
 
                     }
                     case CALL -> {
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+                        int i = 1;
+                        String flushVarName = "";
+                        if (instr.getIthCode(0).equals("callr")) {
+                            flushVarName = instr.getIthCode(i);
+                            i = 2;
+                        }
+                        String functionName = instr.getIthCode(i);
+                        ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
+                        while (true) {
+                            String argName = instr.getIthCode(i);
+                            if (argName.equals("")) {
+                                break;
+                            }
+                            arguments.add(functionIR.fetchVariableByName(argName));
+                            i += 1;
+                        }
+                        switch (instr.getIthCode(0)) {
+                            case "call" -> {
+
+                            }
+                            case "callr" -> {
+
+                            }
+                        }
+
                     }
                     case ARRAYSTORE -> {
                     }
