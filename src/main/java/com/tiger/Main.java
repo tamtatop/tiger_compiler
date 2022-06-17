@@ -139,6 +139,8 @@ class MIPSGenerator {
     }
 
     public void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
+        writer.write("move $fp, $sp\n");
+
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
         String aName = instr.getIthCode(1);
         String bName = instr.getIthCode(2);
@@ -150,7 +152,7 @@ class MIPSGenerator {
         // TODO: handle immediate binops eg: addi
         // TODO: handle floats in ops eg: add.s
 
-        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+        LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, c.typeStructure.base);
         String aRegister = aLoaded.getRegister();
         writer.write(aLoaded.loadAssembly());
 
@@ -171,10 +173,11 @@ class MIPSGenerator {
         functionIR.getBody();
 
         int spOffset = 0;
+//        int fp
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
             if (localVariable.isSpilled) {
-                localVariable.stackOffset = spOffset;
-                spOffset = localVariable.sizeInBytes();
+                spOffset += localVariable.sizeInBytes();
+                    localVariable.stackOffset = -spOffset;
             }
         }
         // for $ra
@@ -183,10 +186,10 @@ class MIPSGenerator {
         writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
             if (localVariable.isSpilled) {
-                writer.write(String.format("sw $, %d($sp)\n", localVariable.stackOffset));
+                writer.write(String.format("sw $, %d($fp)\n", localVariable.stackOffset));
             }
         }
-        writer.write(String.format("sw $ra, %d($sp)\n", spOffset - 4));
+        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
 
         for (IRentry iRentry : functionIR.getBody()) {
             if (iRentry.isInstruction()) {
@@ -240,13 +243,13 @@ class MIPSGenerator {
                     }
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
-                        if (!returnVarName.equals("")) {
+                        if (returnVarName != null) {
                             BackendVariable retVar = functionIR.fetchVariableByName(returnVarName);
                             String retVarRegister = retVar.getAssignedRegister();
                             writer.write(String.format("move, $v0, %s\n", retVarRegister));
                         }
 
-                        writer.write(String.format("lw $ra, %d($sp)\n", spOffset - 4));
+                        writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
                         writer.write("jr $ra\n");
 
@@ -261,13 +264,11 @@ class MIPSGenerator {
                         }
                         String functionName = instr.getIthCode(i);
                         ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
-                        while (true) {
+
+                        i += 1;
+                        for (; i < instr.size(); i++) {
                             String argName = instr.getIthCode(i);
-                            if (argName.equals("")) {
-                                break;
-                            }
                             arguments.add(functionIR.fetchVariableByName(argName));
-                            i += 1;
                         }
                         switch (instr.getIthCode(0)) {
                             case "call" -> {
