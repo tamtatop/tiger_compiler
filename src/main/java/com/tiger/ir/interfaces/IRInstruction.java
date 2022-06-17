@@ -7,6 +7,8 @@ public interface IRInstruction {
 
     List<String> writes();
 
+    int size();
+
     String getIthCode(int i);
 
     IRInstructionType getType();

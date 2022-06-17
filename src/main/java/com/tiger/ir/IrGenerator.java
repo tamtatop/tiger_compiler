@@ -258,7 +258,7 @@ public class IrGenerator {
 
         writer.write(String.format("end_function %s\n\n", curFunction.name));
         if(listener!=null){
-            listener.genFunction(curFunction.name, funcVariables, funcParams, fullIrBody.toString());
+            listener.genFunction(curFunction.name, funcVariables, funcParams, fullIrBody.toString(), curFunction.returnType.typeStructure().base);
         }
     }
 

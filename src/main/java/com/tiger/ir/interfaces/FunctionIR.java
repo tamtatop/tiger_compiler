@@ -1,6 +1,7 @@
 package com.tiger.ir.interfaces;
 
 import com.tiger.BackendVariable;
+import com.tiger.types.BaseType;
 
 import java.util.List;
 
@@ -10,6 +11,8 @@ public interface FunctionIR {
     List<BackendVariable> getLocalVariables();
 
     List<BackendVariable> getArguments();
+
+    BaseType getReturnType();
 
     List<IRentry> getBody();
 

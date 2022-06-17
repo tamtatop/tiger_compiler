@@ -3,6 +3,7 @@ package com.tiger.ir;
 import com.tiger.BackendVariable;
 import com.tiger.NakedVariable;
 import com.tiger.ir.interfaces.*;
+import com.tiger.types.BaseType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,13 +15,14 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
 
     private static class Function implements FunctionIR {
+        BaseType returnType;
         String name;
         HashMap<String, BackendVariable> locals = new HashMap<>();
         List<BackendVariable> args;
         List<IRentry> entries;
         ProgramIR programIR;
 
-        public Function(String name, List<BackendVariable> locals, List<BackendVariable> args, List<IRentry> entries, ProgramIR program) {
+        public Function(String name, List<BackendVariable> locals, List<BackendVariable> args, List<IRentry> entries, ProgramIR program, BaseType returnType) {
             this.name = name;
             for (BackendVariable local : locals) {
                 this.locals.put(local.name, local);
@@ -28,6 +30,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             this.args = args;
             this.entries = entries;
             this.programIR = program;
+            this.returnType = returnType;
         }
 
         @Override
@@ -43,6 +46,11 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         @Override
         public List<BackendVariable> getArguments() {
             return args;
+        }
+
+        @Override
+        public BaseType getReturnType() {
+            return this.returnType;
         }
 
         @Override
@@ -100,7 +108,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         public Instruction(String op, List<String> args) {
             this.op = op;
-            this.args = args;
+            this.args = args.stream().filter(p -> p.equals("")).toList();
         }
 
         @Override
@@ -115,6 +123,10 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             return null;
         }
 
+        @Override
+        public int size() {
+            return args.size();
+        }
 
         /**
          * add, x, y, z
@@ -125,7 +137,11 @@ public class ProgramIRBuilder implements IrGeneratorListener {
          */
         @Override
         public String getIthCode(int i) {
-            return args.get(i);
+            if(i<args.size()) {
+                return args.get(i);
+            } else {
+                return null;
+            }
         }
 
         @Override
@@ -217,7 +233,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
     private Program program;
 
     @Override
-    public void genFunction(String functionName, List<NakedVariable> localVariables, List<NakedVariable> arguments, String irBody) {
+    public void genFunction(String functionName, List<NakedVariable> localVariables, List<NakedVariable> arguments, String irBody, BaseType returnType) {
 
         ArrayList<IRentry> entries = new ArrayList<>();
         irBody.lines().forEach(line -> {
@@ -235,7 +251,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         });
         List<BackendVariable> lvars = localVariables.stream().map(v -> new BackendVariable(v, false)).toList();
         List<BackendVariable> args = arguments.stream().map(v -> new BackendVariable(v, false)).toList();
-        this.program.functions.put(functionName, new Function(functionName, lvars, args, entries, this.program));
+        this.program.functions.put(functionName, new Function(functionName, lvars, args, entries, this.program, returnType));
     }
 
     @Override
