@@ -11,6 +11,7 @@ import com.tiger.ir.interfaces.FunctionIR;
 import com.tiger.ir.interfaces.IRInstruction;
 import com.tiger.ir.interfaces.IRentry;
 import com.tiger.ir.interfaces.ProgramIR;
+import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -145,8 +146,6 @@ class MIPSGenerator {
         String aName = instr.getIthCode(1);
         String bName = instr.getIthCode(2);
         String cName = instr.getIthCode(3);
-        BackendVariable a = functionIR.fetchVariableByName(aName);
-        BackendVariable b = functionIR.fetchVariableByName(bName);
         BackendVariable c = functionIR.fetchVariableByName(cName);
 
         // TODO: handle immediate binops eg: addi
@@ -156,11 +155,11 @@ class MIPSGenerator {
         String aRegister = aLoaded.getRegister();
         writer.write(aLoaded.loadAssembly());
 
-        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+        LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, c.typeStructure.base);
         String bRegister = bLoaded.getRegister();
         writer.write(bLoaded.loadAssembly());
 
-        LoadedVariable cLoaded = new LoadedVariable(c, tempRegisterAllocator);
+        LoadedVariable cLoaded = new LoadedVariable(cName, functionIR, tempRegisterAllocator, c.typeStructure.base);
         String cRegister = cLoaded.getRegister();
 
         if (!c.typeStructure.isBaseInt()) { binop += ".s"; }
@@ -197,17 +196,16 @@ class MIPSGenerator {
                 switch (instr.getType()) {
                     case ASSIGN -> {
                         // a := b
-
+                        // TODO: array assign
                         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
                         String aName = instr.getIthCode(1);
                         String bName = instr.getIthCode(2);
                         BackendVariable a = functionIR.fetchVariableByName(aName);
-                        BackendVariable b = functionIR.fetchVariableByName(bName);
 
-                        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+                        LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, a.typeStructure.base);
                         String aRegister = aLoaded.getRegister();
 
-                        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+                        LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, a.typeStructure.base);
                         String bRegister = bLoaded.getRegister();
                         writer.write(bLoaded.loadAssembly());
 
@@ -246,7 +244,11 @@ class MIPSGenerator {
                         if (returnVarName != null) {
                             BackendVariable retVar = functionIR.fetchVariableByName(returnVarName);
                             String retVarRegister = retVar.getAssignedRegister();
-                            writer.write(String.format("move, $v0, %s\n", retVarRegister));
+                            if (functionIR.getReturnType() == BaseType.INT) {
+                                writer.write(String.format("move, $v0, %s\n", retVarRegister));
+                            } else {
+                                writer.write(String.format("move, $f0, %s\n", retVarRegister));
+                            }
                         }
 
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
