@@ -19,6 +19,7 @@ public class LoadedVariable {
         }
     }
 
+    // TODO: change to fp
     public String loadAssembly() {
         if (!this.backing.isSpilled) return "";
 

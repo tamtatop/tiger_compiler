@@ -2,6 +2,8 @@ package com.tiger;
 
 import com.tiger.antlr.TigerLexer;
 import com.tiger.antlr.TigerParser;
+import com.tiger.backend.LoadedVariable;
+import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
 import com.tiger.ir.ProgramIRBuilder;
@@ -17,6 +19,7 @@ import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -135,7 +138,36 @@ class MIPSGenerator {
         this.writer = writer;
     }
 
-    public void translateFunction(FunctionIR functionIR){
+    public void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
+        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+        String aName = instr.getIthCode(1);
+        String bName = instr.getIthCode(2);
+        String cName = instr.getIthCode(3);
+        BackendVariable a = functionIR.fetchVariableByName(aName);
+        BackendVariable b = functionIR.fetchVariableByName(bName);
+        BackendVariable c = functionIR.fetchVariableByName(cName);
+
+        // TODO: handle immediate binops eg: addi
+        // TODO: handle floats in ops eg: add.s
+
+        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+        String aRegister = aLoaded.getRegister();
+        writer.write(aLoaded.loadAssembly());
+
+        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+        String bRegister = bLoaded.getRegister();
+        writer.write(bLoaded.loadAssembly());
+
+        LoadedVariable cLoaded = new LoadedVariable(c, tempRegisterAllocator);
+        String cRegister = cLoaded.getRegister();
+
+        if (!c.typeStructure.isBaseInt()) { binop += ".s"; }
+
+        writer.write(String.format("%s %s, %s, %s", binop, cRegister, aRegister, bRegister));
+        writer.write(cLoaded.flushAssembly());
+    }
+
+    public void translateFunction(FunctionIR functionIR) throws BackendException {
         functionIR.getBody();
 
         int spOffset = 0;
@@ -161,36 +193,44 @@ class MIPSGenerator {
                 IRInstruction instr = iRentry.asInstruction();
                 switch (instr.getType()) {
                     case ASSIGN -> {
+                        // a := b
+
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+                        String aName = instr.getIthCode(1);
+                        String bName = instr.getIthCode(2);
+                        BackendVariable a = functionIR.fetchVariableByName(aName);
+                        BackendVariable b = functionIR.fetchVariableByName(bName);
+
+                        LoadedVariable aLoaded = new LoadedVariable(a, tempRegisterAllocator);
+                        String aRegister = aLoaded.getRegister();
+
+                        LoadedVariable bLoaded = new LoadedVariable(b, tempRegisterAllocator);
+                        String bRegister = bLoaded.getRegister();
+                        writer.write(bLoaded.loadAssembly());
+
+                        writer.write(String.format("move %s, %s", aRegister, bRegister));
+                        writer.write(aLoaded.flushAssembly());
 
                     }
                     case BINOP -> {
                         switch (instr.getIthCode(0)) {
                             case "add" -> {
-                                String aName = instr.getIthCode(1);
-                                String bName = instr.getIthCode(2);
-                                BackendVariable a = functionIR.fetchVariableByName(aName);
-                                BackendVariable b = functionIR.fetchVariableByName(bName);
-
-                                // TODO: handle floats
-                                // TODO: handle immediate binops eg: addi
-                                String aRegister = "";
-                                if (a.isSpilled) {
-                                    aRegister = "t0";
-                                    writer.write(String.format("lw $t0, %d($sp)", a.stackOffset));
-                                } else {
-                                    aRegister = a.getRegister();
-                                }
-                                String bRegister = "";
-                                if (b.isSpilled) {
-                                    bRegister = "t0";
-                                    writer.write(String.format("lw $t1, %d($sp)", b.stackOffset));
-                                } else {
-                                    bRegister = b.getRegister();
-                                }
-                                writer.write(String.format("add $t2, %s, %s", aRegister, bRegister));
+                                translateBinaryOperation("add", instr, functionIR);
                             }
                             case "sub" -> {
-
+                                translateBinaryOperation("sub", instr, functionIR);
+                            }
+                            case "mult" -> {
+                                translateBinaryOperation("mul", instr, functionIR);
+                            }
+                            case "div" -> {
+                                translateBinaryOperation("div", instr, functionIR);
+                            }
+                            case "and" -> {
+                                translateBinaryOperation("and", instr, functionIR);
+                            }
+                            case "or" -> {
+                                translateBinaryOperation("or", instr, functionIR);
                             }
                         }
                     }
@@ -199,8 +239,45 @@ class MIPSGenerator {
                     case BRANCH -> {
                     }
                     case RETURN -> {
+                        String returnVarName = instr.getIthCode(1);
+                        if (!returnVarName.equals("")) {
+                            BackendVariable retVar = functionIR.fetchVariableByName(returnVarName);
+                            String retVarRegister = retVar.getAssignedRegister();
+                            writer.write(String.format("move, $v0, %s\n", retVarRegister));
+                        }
+
+                        writer.write(String.format("lw $ra, %d($sp)\n", spOffset - 4));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
+                        writer.write("jr $ra\n");
+
                     }
                     case CALL -> {
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+                        int i = 1;
+                        String flushVarName = "";
+                        if (instr.getIthCode(0).equals("callr")) {
+                            flushVarName = instr.getIthCode(i);
+                            i = 2;
+                        }
+                        String functionName = instr.getIthCode(i);
+                        ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
+                        while (true) {
+                            String argName = instr.getIthCode(i);
+                            if (argName.equals("")) {
+                                break;
+                            }
+                            arguments.add(functionIR.fetchVariableByName(argName));
+                            i += 1;
+                        }
+                        switch (instr.getIthCode(0)) {
+                            case "call" -> {
+
+                            }
+                            case "callr" -> {
+
+                            }
+                        }
+
                     }
                     case ARRAYSTORE -> {
                     }
@@ -212,11 +289,8 @@ class MIPSGenerator {
 
             }
         }
-
-
     }
 }
-
 
 
 
