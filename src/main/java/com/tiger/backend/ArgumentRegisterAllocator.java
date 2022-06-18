@@ -4,7 +4,7 @@ import com.tiger.types.BaseType;
 
 import java.util.Stack;
 
-class ArgumentRegisterAllocator {
+public class ArgumentRegisterAllocator {
     private final static String[] INT_ARGS = {"a0", "a1", "a2", "a3"};
     private final static String[] FLOAT_ARGS = {"f12", "f14"};
 
@@ -21,17 +21,19 @@ class ArgumentRegisterAllocator {
     }
 
     public String popInt() {
-        return intArgs.pop();
+        if (intArgs.empty()) return null;
+        else return intArgs.pop();
     }
 
     public String popFloat() {
-        return floatArgs.pop();
+        if (floatArgs.empty()) return null;
+        else return floatArgs.pop();
     }
 
-    public String popTempOfType(BaseType type) {
-        return switch (type) {
-            case INT -> intArgs.pop();
-            case FLOAT -> floatArgs.pop();
+    public String popArgOfType(BaseType type) {
+         return switch (type) {
+            case INT -> popInt();
+            case FLOAT -> popFloat();
         };
     }
 
