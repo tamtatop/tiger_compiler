@@ -2,6 +2,7 @@ package com.tiger;
 
 import com.tiger.antlr.TigerLexer;
 import com.tiger.antlr.TigerParser;
+import com.tiger.backend.ArgumentRegisterAllocator;
 import com.tiger.backend.LoadedVariable;
 import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.io.CancellableWriter;
@@ -22,6 +23,7 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 
 public class Main {
@@ -168,8 +170,8 @@ class MIPSGenerator {
         writer.write(cLoaded.flushAssembly());
     }
 
-    public void translateFunction(FunctionIR functionIR) throws BackendException {
-        functionIR.getBody();
+    public void translateFunction(FunctionIR functionIR, ProgramIR programIR) throws BackendException {
+        writer.write(functionIR.getFunctionName() + ":");
 
         int spOffset = 0;
 //        int fp
@@ -258,28 +260,66 @@ class MIPSGenerator {
                     }
                     case CALL -> {
                         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+                        ArgumentRegisterAllocator argRegisterAllocator = new ArgumentRegisterAllocator();
                         int i = 1;
                         String flushVarName = "";
                         if (instr.getIthCode(0).equals("callr")) {
                             flushVarName = instr.getIthCode(i);
                             i = 2;
                         }
-                        String functionName = instr.getIthCode(i);
-                        ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
+                        String callingFunctionName = instr.getIthCode(i);
+                        FunctionIR callingFunction = programIR.getFunctionByName(callingFunctionName);
+//                        ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
 
                         i += 1;
+                        int stackVarIdx = 0;
                         for (; i < instr.size(); i++) {
                             String argName = instr.getIthCode(i);
-                            arguments.add(functionIR.fetchVariableByName(argName));
-                        }
-                        switch (instr.getIthCode(0)) {
-                            case "call" -> {
+//                            arguments.add(functionIR.fetchVariableByName(argName));
+                            BackendVariable argBackend = functionIR.fetchVariableByName(argName);
+                            BaseType argType =  argBackend.typeStructure.base;
+                            LoadedVariable arg = new LoadedVariable(argName, functionIR, tempRegisterAllocator, argType);
+                            String argRegister = argRegisterAllocator.popArgOfType(argType);
 
+                            String asmInstr = "";
+                            String storeInstr = "";
+                            switch (argType) {
+                                case INT -> {
+                                    asmInstr = "move";
+                                    storeInstr = "sw";
+                                }
+                                case FLOAT -> {
+                                    asmInstr = "mov.s";
+                                    storeInstr = "s.s";
+                                }
                             }
-                            case "callr" -> {
-
+                            if (argRegister == null) {
+                                stackVarIdx += 1;
+                                writer.write(String.format("%s $%s, %d($fp)", storeInstr, arg.getRegister(), -spOffset - stackVarIdx*4));
+                            } else {
+                                writer.write(String.format("%s $%s, $%s", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
+                        // TODO: jump tu generate new function or smthn. check if it's correct
+                        writer.write(String.format("jal %s:", callingFunctionName));
+
+                        if (instr.getIthCode(0).equals("callr")) {
+                            BaseType flushVarType = functionIR.fetchVariableByName(flushVarName).typeStructure.base;
+                            LoadedVariable flushVar = new LoadedVariable(flushVarName, functionIR, tempRegisterAllocator, flushVarType);
+                            String returnedValueRegister = "";
+                            if (flushVarType == BaseType.INT) {
+                                returnedValueRegister = "$v0";
+                            } else {
+                                returnedValueRegister = "$f0";
+                            }
+                            if (callingFunction.getReturnType() == BaseType.INT && flushVarType == BaseType.FLOAT){
+                                writer.write("mtc1 $v0, $f0");
+                                writer.write("cvt.s.w $f0, $f0");
+                            }
+                            writer.write(String.format("move %s, %s", flushVar.getRegister(), returnedValueRegister));
+                            writer.write(flushVar.flushAssembly());
+                        }
+
 
                     }
                     case ARRAYSTORE -> {
@@ -294,7 +334,6 @@ class MIPSGenerator {
         }
     }
 }
-
 
 
 
