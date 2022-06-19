@@ -238,6 +238,8 @@ class MIPSGenerator {
                         }
                     }
                     case GOTO -> {
+                        String afterLoop = instr.getIthCode(1);
+                        writer.write(String.format("j %s", afterLoop));
                     }
                     case BRANCH -> {
                     }
