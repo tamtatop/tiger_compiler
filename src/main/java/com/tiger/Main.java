@@ -186,7 +186,7 @@ class MIPSGenerator {
 
         if (!c.typeStructure.isBaseInt()) { binop += ".s"; }
 
-        writer.write(String.format("%s %s, %s, %s", binop, cRegister, aRegister, bRegister));
+        writer.write(String.format("%s %s, %s, %s\n", binop, cRegister, aRegister, bRegister));
         writer.write(cLoaded.flushAssembly());
     }
 
@@ -231,7 +231,7 @@ class MIPSGenerator {
                         String bRegister = bLoaded.getRegister();
                         writer.write(bLoaded.loadAssembly());
 
-                        writer.write(String.format("move %s, %s", aRegister, bRegister));
+                        writer.write(String.format("move %s, %s\n", aRegister, bRegister));
                         writer.write(aLoaded.flushAssembly());
 
                     }
@@ -299,9 +299,9 @@ class MIPSGenerator {
                             }
                             if (argRegister == null) {
                                 stackVarIdx += 1;
-                                writer.write(String.format("%s $%s, %d($fp)", storeInstr, arg.getRegister(), -spOffset - stackVarIdx*4));
+                                writer.write(String.format("%s $%s, %d($fp)\n", storeInstr, arg.getRegister(), -spOffset - stackVarIdx*4));
                             } else {
-                                writer.write(String.format("%s $%s, $%s", asmInstr, argRegister, arg.getRegister()));
+                                writer.write(String.format("%s $%s, $%s\n", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
                         // TODO: jump tu generate new function or smthn. check if it's correct
@@ -317,18 +317,35 @@ class MIPSGenerator {
                                 returnedValueRegister = "$f0";
                             }
                             if (callingFunction.getReturnType() == BaseType.INT && flushVarType == BaseType.FLOAT){
-                                writer.write("mtc1 $v0, $f0");
-                                writer.write("cvt.s.w $f0, $f0");
+                                writer.write("mtc1 $v0, $f0\n");
+                                writer.write("cvt.s.w $f0, $f0\n");
                             }
-                            writer.write(String.format("move %s, %s", flushVar.getRegister(), returnedValueRegister));
+                            writer.write(String.format("move %s, %s\n", flushVar.getRegister(), returnedValueRegister));
                             writer.write(flushVar.flushAssembly());
                         }
 
 
                     }
                     case ARRAYSTORE -> {
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+
+                        String arrName = instr.getIthCode(1);
+                        BackendVariable arr = functionIR.fetchVariableByName(arrName);
+                        String iName = instr.getIthCode(2);
+                        LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
+
+                        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
+                        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
+                        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
+
+                        String aName = instr.getIthCode(3);
+                        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
+
+                        writer.write(a.loadAssembly());
+                        writer.write(String.format("sw %s, 0(%s)", a.getRegister(), i.getRegister()));
                     }
                     case ARRAYLOAD -> {
+
                     }
                 }
 
