@@ -327,40 +327,14 @@ class MIPSGenerator {
 
                     }
                     case ARRAYSTORE -> {
-                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
-
-                        String arrName = instr.getIthCode(1);
-                        BackendVariable arr = functionIR.fetchVariableByName(arrName);
-                        String iName = instr.getIthCode(2);
-                        LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
-
-                        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
-                        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
-                        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
-
-                        String aName = instr.getIthCode(3);
-                        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
-
-                        writer.write(a.loadAssembly());
-                        writer.write(String.format("sw %s, 0(%s)", a.getRegister(), i.getRegister()));
+                        ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
+                        writer.write(arrData.a.loadAssembly());
+                        writer.write(String.format("sw %s, 0(%s)", arrData.a.getRegister(), arrData.arrAddressRegister));
                     }
                     case ARRAYLOAD -> {
-                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
-
-                        String arrName = instr.getIthCode(1);
-                        BackendVariable arr = functionIR.fetchVariableByName(arrName);
-                        String iName = instr.getIthCode(2);
-                        LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
-
-                        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
-                        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
-                        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
-
-                        String aName = instr.getIthCode(3);
-                        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
-
-                        writer.write(String.format("lw %s, 0(%s)", a.getRegister(), i.getRegister()));
-                        writer.write(a.flushAssembly());
+                        ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
+                        writer.write(String.format("lw %s, 0(%s)", arrData.a.getRegister(), arrData.arrAddressRegister));
+                        writer.write(arrData.a.flushAssembly());
                     }
                 }
 
@@ -380,6 +354,35 @@ class MIPSGenerator {
         writer.write(a.loadAssembly());
         writer.write(b.loadAssembly());
         writer.write(String.format("%s %s, %s, %s", branchOp, a.getRegister(), b.getRegister(), label));
+    }
+
+    private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR){
+        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+
+        String arrName = instr.getIthCode(1);
+        BackendVariable arr = functionIR.fetchVariableByName(arrName);
+        String iName = instr.getIthCode(2);
+        LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
+
+        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
+        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
+        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
+
+        String aName = instr.getIthCode(3);
+        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
+
+        return new ArrStoreLoadData(a, i.getRegister());
+    }
+}
+
+// for a := arr[i] or arr[i] := a
+class ArrStoreLoadData {
+    LoadedVariable a;
+    String arrAddressRegister;
+
+    public ArrStoreLoadData(LoadedVariable a, String arrAddressRegister) {
+        this.a = a;
+        this.arrAddressRegister = arrAddressRegister;
     }
 }
 
