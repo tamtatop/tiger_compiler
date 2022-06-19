@@ -22,6 +22,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
 
@@ -136,7 +137,26 @@ class NaiveRegisterAllocator implements RegisterAllocator{
 
 class MIPSGenerator {
     private final CancellableWriter writer;
+    private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
+    private static final HashMap<String, String> asmBranchOp = new HashMap<>();
 
+//    "breq" : "beq", "brneq" : "bne", "brlt" : "blt", "brgt" : "bgt", "brleq" : "ble", "brgeq" : "bge"
+
+    static {
+        asmBinaryOp.put("add", "add");
+        asmBinaryOp.put("sub", "sub");
+        asmBinaryOp.put("mult", "mul");
+        asmBinaryOp.put("div", "div");
+        asmBinaryOp.put("and", "and");
+        asmBinaryOp.put("or", "or");
+
+        asmBranchOp.put("breq", "beq");
+        asmBranchOp.put("brneq", "bne");
+        asmBranchOp.put("brlt", "blt");
+        asmBranchOp.put("brgt", "bgt");
+        asmBranchOp.put("brleq", "ble");
+        asmBranchOp.put("brgeq", "bge");
+    }
     public MIPSGenerator(CancellableWriter writer) {
         this.writer = writer;
     }
@@ -216,52 +236,14 @@ class MIPSGenerator {
 
                     }
                     case BINOP -> {
-                        switch (instr.getIthCode(0)) {
-                            case "add" -> {
-                                translateBinaryOperation("add", instr, functionIR);
-                            }
-                            case "sub" -> {
-                                translateBinaryOperation("sub", instr, functionIR);
-                            }
-                            case "mult" -> {
-                                translateBinaryOperation("mul", instr, functionIR);
-                            }
-                            case "div" -> {
-                                translateBinaryOperation("div", instr, functionIR);
-                            }
-                            case "and" -> {
-                                translateBinaryOperation("and", instr, functionIR);
-                            }
-                            case "or" -> {
-                                translateBinaryOperation("or", instr, functionIR);
-                            }
-                        }
+                        translateBinaryOperation(asmBinaryOp.get(instr.getIthCode(0)), instr, functionIR);
                     }
                     case GOTO -> {
                         String afterLoop = instr.getIthCode(1);
                         writer.write(String.format("j %s", afterLoop));
                     }
                     case BRANCH -> {
-                        switch (instr.getIthCode(0)) {
-                            case "breq" -> {
-                                translateBranchOperation("beq", functionIR, instr);
-                            }
-                            case "brneq" -> {
-                                translateBranchOperation("bne", functionIR, instr);
-                            }
-                            case "brlt" -> {
-                                translateBranchOperation("blt", functionIR, instr);
-                            }
-                            case "brgt" -> {
-                                translateBranchOperation("bgt", functionIR, instr);
-                            }
-                            case "brleq" -> {
-                                translateBranchOperation("ble", functionIR, instr);
-                            }
-                            case "brgeq" -> {
-                                translateBranchOperation("bge", functionIR, instr);
-                            }
-                        }
+                        translateBranchOperation(asmBranchOp.get(instr.getIthCode(0)), instr, functionIR);
                     }
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
@@ -356,7 +338,7 @@ class MIPSGenerator {
         }
     }
 
-    private void translateBranchOperation(String branchOp, FunctionIR functionIR, IRInstruction instr) {
+    private void translateBranchOperation(String branchOp, IRInstruction instr, FunctionIR functionIR) {
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
         String aName = instr.getIthCode(1);
         String bName = instr.getIthCode(2);
