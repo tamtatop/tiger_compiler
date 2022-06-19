@@ -242,6 +242,26 @@ class MIPSGenerator {
                         writer.write(String.format("j %s", afterLoop));
                     }
                     case BRANCH -> {
+                        switch (instr.getIthCode(0)) {
+                            case "breq" -> {
+                                translateBranchOperation("beq", functionIR, instr);
+                            }
+                            case "brneq" -> {
+                                translateBranchOperation("bne", functionIR, instr);
+                            }
+                            case "brlt" -> {
+                                translateBranchOperation("blt", functionIR, instr);
+                            }
+                            case "brgt" -> {
+                                translateBranchOperation("bgt", functionIR, instr);
+                            }
+                            case "brleq" -> {
+                                translateBranchOperation("ble", functionIR, instr);
+                            }
+                            case "brgeq" -> {
+                                translateBranchOperation("bge", functionIR, instr);
+                            }
+                        }
                     }
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
@@ -334,6 +354,18 @@ class MIPSGenerator {
 
             }
         }
+    }
+
+    private void translateBranchOperation(String branchOp, FunctionIR functionIR, IRInstruction instr) {
+        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+        String aName = instr.getIthCode(1);
+        String bName = instr.getIthCode(2);
+        String label = instr.getIthCode(3);
+        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, BaseType.INT);
+        LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, BaseType.INT);
+        writer.write(a.loadAssembly());
+        writer.write(b.loadAssembly());
+        writer.write(String.format("%s %s, %s, %s", branchOp, a.getRegister(), b.getRegister(), label));
     }
 }
 
