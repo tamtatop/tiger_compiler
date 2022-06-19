@@ -345,7 +345,22 @@ class MIPSGenerator {
                         writer.write(String.format("sw %s, 0(%s)", a.getRegister(), i.getRegister()));
                     }
                     case ARRAYLOAD -> {
+                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
 
+                        String arrName = instr.getIthCode(1);
+                        BackendVariable arr = functionIR.fetchVariableByName(arrName);
+                        String iName = instr.getIthCode(2);
+                        LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
+
+                        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
+                        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
+                        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
+
+                        String aName = instr.getIthCode(3);
+                        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
+
+                        writer.write(String.format("lw %s, 0(%s)", a.getRegister(), i.getRegister()));
+                        writer.write(a.flushAssembly());
                     }
                 }
 
