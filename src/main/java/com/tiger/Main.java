@@ -140,8 +140,6 @@ class MIPSGenerator {
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmBranchOp = new HashMap<>();
 
-//    "breq" : "beq", "brneq" : "bne", "brlt" : "blt", "brgt" : "bgt", "brleq" : "ble", "brgeq" : "bge"
-
     static {
         asmBinaryOp.put("add", "add");
         asmBinaryOp.put("sub", "sub");
@@ -191,7 +189,7 @@ class MIPSGenerator {
     }
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) throws BackendException {
-        writer.write(functionIR.getFunctionName() + ":");
+        writer.write(functionIR.getFunctionName() + ":\n");
 
         int spOffset = 0;
 //        int fp
@@ -240,7 +238,7 @@ class MIPSGenerator {
                     }
                     case GOTO -> {
                         String afterLoop = instr.getIthCode(1);
-                        writer.write(String.format("j %s", afterLoop));
+                        writer.write(String.format("j %s\n", afterLoop));
                     }
                     case BRANCH -> {
                         translateBranchOperation(asmBranchOp.get(instr.getIthCode(0)), instr, functionIR);
@@ -305,7 +303,7 @@ class MIPSGenerator {
                             }
                         }
                         // TODO: jump tu generate new function or smthn. check if it's correct
-                        writer.write(String.format("jal %s:", callingFunctionName));
+                        writer.write(String.format("jal %s:\n", callingFunctionName));
 
                         if (instr.getIthCode(0).equals("callr")) {
                             BaseType flushVarType = functionIR.fetchVariableByName(flushVarName).typeStructure.base;
@@ -329,11 +327,11 @@ class MIPSGenerator {
                     case ARRAYSTORE -> {
                         ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
                         writer.write(arrData.a.loadAssembly());
-                        writer.write(String.format("sw %s, 0(%s)", arrData.a.getRegister(), arrData.arrAddressRegister));
+                        writer.write(String.format("sw %s, 0(%s)\n", arrData.a.getRegister(), arrData.arrAddressRegister));
                     }
                     case ARRAYLOAD -> {
                         ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
-                        writer.write(String.format("lw %s, 0(%s)", arrData.a.getRegister(), arrData.arrAddressRegister));
+                        writer.write(String.format("lw %s, 0(%s)\n", arrData.a.getRegister(), arrData.arrAddressRegister));
                         writer.write(arrData.a.flushAssembly());
                     }
                 }
@@ -353,7 +351,7 @@ class MIPSGenerator {
         LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, BaseType.INT);
         writer.write(a.loadAssembly());
         writer.write(b.loadAssembly());
-        writer.write(String.format("%s %s, %s, %s", branchOp, a.getRegister(), b.getRegister(), label));
+        writer.write(String.format("%s %s, %s, %s\n", branchOp, a.getRegister(), b.getRegister(), label));
     }
 
     private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR){
@@ -364,9 +362,9 @@ class MIPSGenerator {
         String iName = instr.getIthCode(2);
         LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
 
-        writer.write(String.format("sll %s, %s, 2", i.getRegister(), i.getRegister()));
-        writer.write(String.format("add %s, %s, $fp", i.getRegister(), i.getRegister()));
-        writer.write(String.format("addi %s, %s, %s", i.getRegister(), i.getRegister(), arr.stackOffset));
+        writer.write(String.format("sll %s, %s, 2\n", i.getRegister(), i.getRegister()));
+        writer.write(String.format("add %s, %s, $fp\n", i.getRegister(), i.getRegister()));
+        writer.write(String.format("addi %s, %s, %s\n", i.getRegister(), i.getRegister(), arr.stackOffset));
 
         String aName = instr.getIthCode(3);
         LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
