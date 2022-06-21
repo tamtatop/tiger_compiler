@@ -260,7 +260,7 @@ class MIPSGenerator {
                             };
 
                             for (int i = 0; i < Integer.parseInt(bName); i++) {
-                                writer.write(String.format("%s %s, %d(%s)",storeInstruction,  v.getRegister(), WORD_SIZE*i, XRegister));
+                                writer.write(String.format("%s %s, %d(%s)\n",storeInstruction,  v.getRegister(), WORD_SIZE*i, XRegister));
                             }
                         } else if(a.typeStructure.isArray()) {
                             // assign, X, Y,
@@ -416,8 +416,8 @@ class MIPSGenerator {
         if(a.isStatic) {
             writer.write(String.format("la %s, %s\n", startReg, a.staticName()));
         } else {
-            writer.write(String.format("move %s, $fp", startReg));
-            writer.write(String.format("addi %s, %s, %d", startReg, startReg, a.stackOffset));
+            writer.write(String.format("move %s, $fp\n", startReg));
+            writer.write(String.format("addi %s, %s, %d\n", startReg, startReg, a.stackOffset));
         }
         return startReg;
     }
