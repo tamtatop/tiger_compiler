@@ -194,6 +194,11 @@ class MIPSGenerator {
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
         writer.write(functionIR.getFunctionName() + ":\n");
 
+        // space to store old fp
+        writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
+        writer.write("sw $fp, 0($sp)\n");
+        writer.write("move $fp, $sp\n");
+
         int spOffset = 0;
 //        int fp
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
@@ -294,6 +299,12 @@ class MIPSGenerator {
                         handleSaveRegData(saveRegAddr, "lw", "l.s");
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
+
+                        // restore old fp
+                        writer.write("lw $fp, 0($sp)\n");
+                        // remove space allocated for storing old fp
+                        writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
+
                         writer.write("jr $ra\n");
 
                     }
