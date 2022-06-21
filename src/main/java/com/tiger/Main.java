@@ -13,7 +13,6 @@ import com.tiger.ir.interfaces.IRInstruction;
 import com.tiger.ir.interfaces.IRentry;
 import com.tiger.ir.interfaces.ProgramIR;
 import com.tiger.types.BaseType;
-import com.tiger.types.TypeStructure;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
@@ -21,10 +20,10 @@ import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Stack;
+
+import static com.tiger.BackendVariable.WORD_SIZE;
 
 
 public class Main {
@@ -188,7 +187,7 @@ class MIPSGenerator {
         writer.write(cLoaded.flushAssembly());
     }
 
-    public void translateFunction(FunctionIR functionIR, ProgramIR programIR) throws BackendException {
+    public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
         writer.write(functionIR.getFunctionName() + ":\n");
 
         int spOffset = 0;
@@ -215,34 +214,69 @@ class MIPSGenerator {
                 IRInstruction instr = iRentry.asInstruction();
                 switch (instr.getType()) {
                     case ASSIGN -> {
-                        // a := b
-                        // TODO: array assign
                         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
                         String aName = instr.getIthCode(1);
                         String bName = instr.getIthCode(2);
+                        String cName = instr.getIthCode(3);
+
                         BackendVariable a = functionIR.fetchVariableByName(aName);
+                        if(cName == null && !a.typeStructure.isArray()) {
+                            // assign, a, b,
+                            LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, a.typeStructure.base);
+                            String aRegister = aLoaded.getRegister();
 
-                        LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, a.typeStructure.base);
-                        String aRegister = aLoaded.getRegister();
+                            LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, a.typeStructure.base);
+                            String bRegister = bLoaded.getRegister();
+                            writer.write(bLoaded.loadAssembly());
 
-                        LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, a.typeStructure.base);
-                        String bRegister = bLoaded.getRegister();
-                        writer.write(bLoaded.loadAssembly());
+                            writer.write(String.format("move %s, %s\n", aRegister, bRegister));
+                            writer.write(aLoaded.flushAssembly());
+                        } else if(cName != null) {
+                            // assign, X, 100, 10
+                            // X = [10]*100
+                            String XRegister = loadArrayBeginning(tempRegisterAllocator, a);
+                            LoadedVariable v = new LoadedVariable(cName, functionIR, tempRegisterAllocator, a.typeStructure.base);
+                            writer.write(v.loadAssembly());
 
-                        writer.write(String.format("move %s, %s\n", aRegister, bRegister));
-                        writer.write(aLoaded.flushAssembly());
+                            String storeInstruction = switch (a.typeStructure.base) {
+                                case INT -> "sw";
+                                case FLOAT -> "s.s";
+                            };
 
+                            for (int i = 0; i < Integer.parseInt(bName); i++) {
+                                writer.write(String.format("%s %s, %d(%s)",storeInstruction,  v.getRegister(), WORD_SIZE*i, XRegister));
+                            }
+                        } else if(a.typeStructure.isArray()) {
+                            // assign, X, Y,
+                            // X[..] = Y[..]
+                            String XRegister = loadArrayBeginning(tempRegisterAllocator, a);
+                            BackendVariable b = functionIR.fetchVariableByName(bName);
+                            String YRegister = loadArrayBeginning(tempRegisterAllocator, b);
+
+                            String storeInstruction = switch (a.typeStructure.base) {
+                                case INT -> "sw";
+                                case FLOAT -> "s.s";
+                            };
+
+                            String loadInstruction = switch (a.typeStructure.base) {
+                                case INT -> "lw";
+                                case FLOAT -> "l.s";
+                            };
+
+                            String copyRegister = tempRegisterAllocator.popInt();
+
+                            for(int i=0; i < a.typeStructure.arraySize; i++) {
+                                writer.write(String.format("%s %s, %d(%s)", loadInstruction, copyRegister, WORD_SIZE*i, XRegister));
+                                writer.write(String.format("%s %s, %d(%s)", storeInstruction, copyRegister, WORD_SIZE*i, YRegister));
+                            }
+                        }
                     }
-                    case BINOP -> {
-                        translateBinaryOperation(asmBinaryOp.get(instr.getIthCode(0)), instr, functionIR);
-                    }
+                    case BINOP -> translateBinaryOperation(asmBinaryOp.get(instr.getIthCode(0)), instr, functionIR);
                     case GOTO -> {
                         String afterLoop = instr.getIthCode(1);
                         writer.write(String.format("j %s\n", afterLoop));
                     }
-                    case BRANCH -> {
-                        translateBranchOperation(asmBranchOp.get(instr.getIthCode(0)), instr, functionIR);
-                    }
+                    case BRANCH -> translateBranchOperation(asmBranchOp.get(instr.getIthCode(0)), instr, functionIR);
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
                         if (returnVarName != null) {
@@ -322,7 +356,6 @@ class MIPSGenerator {
                             writer.write(flushVar.flushAssembly());
                         }
 
-
                     }
                     case ARRAYSTORE -> {
                         ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
@@ -340,6 +373,17 @@ class MIPSGenerator {
 
             }
         }
+    }
+
+    private String loadArrayBeginning(TemporaryRegisterAllocator tempRegisterAllocator, BackendVariable a) {
+        String startReg = tempRegisterAllocator.popInt();
+        if(a.isStatic) {
+            writer.write(String.format("la %s, %s\n", startReg, a.staticName()));
+        } else {
+            writer.write(String.format("move %s, $fp", startReg));
+            writer.write(String.format("addi %s, %s, %d", startReg, startReg, a.stackOffset));
+        }
+        return startReg;
     }
 
     private void translateBranchOperation(String branchOp, IRInstruction instr, FunctionIR functionIR) {
@@ -362,9 +406,11 @@ class MIPSGenerator {
         String iName = instr.getIthCode(2);
         LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
 
+        // TODO: possibly optimize to work with one less register
+
         writer.write(String.format("sll %s, %s, 2\n", i.getRegister(), i.getRegister()));
-        writer.write(String.format("add %s, %s, $fp\n", i.getRegister(), i.getRegister()));
-        writer.write(String.format("addi %s, %s, %s\n", i.getRegister(), i.getRegister(), arr.stackOffset));
+        String arrayBeginningRegister = loadArrayBeginning(tempRegisterAllocator, arr);
+        writer.write(String.format("add %s, %s, %s\n", i.getRegister(), i.getRegister(), arrayBeginningRegister));
 
         String aName = instr.getIthCode(3);
         LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);

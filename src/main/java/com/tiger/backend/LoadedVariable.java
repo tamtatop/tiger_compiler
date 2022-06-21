@@ -29,6 +29,7 @@ public class LoadedVariable {
         }
     }
 
+    // TODO: consider should user of loaded variable expect that variable does not change unless flush is called?!
     public LoadedVariable(String s, FunctionIR f, TemporaryRegisterAllocator tempAllocator, BaseType type) {
         this.type = type;
         if (isNumeric(s)) {
@@ -53,7 +54,6 @@ public class LoadedVariable {
         }
     }
 
-    // TODO: change to fp
     public String loadAssembly() {
         return switch (this.type) {
             case INT -> switch (this.backingType) {
