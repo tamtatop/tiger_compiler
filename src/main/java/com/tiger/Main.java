@@ -363,7 +363,6 @@ class MIPSGenerator {
 
                     }
                     case CALL -> {
-                        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
                         ArgumentRegisterAllocator argRegisterAllocator = new ArgumentRegisterAllocator();
                         int i = 1;
                         String flushVarName = "";
@@ -377,11 +376,13 @@ class MIPSGenerator {
 
                         i += 1;
                         int stackVarIdx = 0;
-                        for (; i < instr.size(); i++) {
-                            String argName = instr.getIthCode(i);
-//                            arguments.add(functionIR.fetchVariableByName(argName));
-                            BackendVariable argBackend = functionIR.fetchVariableByName(argName);
-                            BaseType argType =  argBackend.typeStructure.base;
+                        assert instr.size() == i + callingFunction.getArguments().size();
+                        for (int argIdx = 0; argIdx < callingFunction.getArguments().size(); argIdx++) {
+                            // we can reset temp allocation on each copy
+                            TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+
+                            String argName = instr.getIthCode(i + argIdx);
+                            BaseType argType =  callingFunction.getArguments().get(argIdx).typeStructure.base;
                             LoadedVariable arg = new LoadedVariable(argName, functionIR, tempRegisterAllocator, argType);
                             String argRegister = argRegisterAllocator.popArgOfType(argType);
 
@@ -404,10 +405,12 @@ class MIPSGenerator {
                                 writer.write(String.format("%s $%s, $%s\n", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
-                        // TODO: jump tu generate new function or smthn. check if it's correct
+                        // TODO: jump to generate new function or smthn. check if it's correct
                         writer.write(String.format("jal %s:\n", callingFunctionName));
 
                         if (instr.getIthCode(0).equals("callr")) {
+                            TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+
                             BaseType flushVarType = functionIR.fetchVariableByName(flushVarName).typeStructure.base;
                             LoadedVariable flushVar = new LoadedVariable(flushVarName, functionIR, tempRegisterAllocator, flushVarType);
                             String returnedValueRegister = "";
