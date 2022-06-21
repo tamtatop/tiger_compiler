@@ -1,12 +1,13 @@
-package com.tiger;
+package com.tiger.backend;
 
+import com.tiger.NakedVariable;
 import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
 
 public class BackendVariable {
-    final static int WORD_SIZE = 4;
+    public final static int WORD_SIZE = 4;
 
     // TODO: add more here
     public String[] ALLOCATABLE_INT_REGISTERS = new String[]{"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};

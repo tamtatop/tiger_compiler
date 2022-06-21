@@ -1,6 +1,6 @@
 package com.tiger.ir;
 
-import com.tiger.BackendVariable;
+import com.tiger.backend.BackendVariable;
 import com.tiger.NakedVariable;
 import com.tiger.ir.interfaces.*;
 import com.tiger.types.BaseType;

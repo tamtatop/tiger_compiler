@@ -1,7 +1,5 @@
 package com.tiger.backend;
 
-import com.tiger.BackendException;
-import com.tiger.BackendVariable;
 import com.tiger.ir.interfaces.FunctionIR;
 import com.tiger.types.BaseType;
 

@@ -1,6 +1,6 @@
 package com.tiger.ir.interfaces;
 
-import com.tiger.BackendVariable;
+import com.tiger.backend.BackendVariable;
 import com.tiger.types.BaseType;
 
 import java.util.List;
