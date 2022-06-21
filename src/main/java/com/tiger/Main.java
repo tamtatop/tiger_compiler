@@ -171,33 +171,34 @@ class MIPSGenerator {
         this.writer = writer;
     }
 
-    public void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
-        writer.write("move $fp, $sp\n");
+    public void translateProgram(ProgramIR programIR) {
+        translateStaticDataSection(programIR);
 
-        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
-        String aName = instr.getIthCode(1);
-        String bName = instr.getIthCode(2);
-        String cName = instr.getIthCode(3);
-        BackendVariable c = functionIR.fetchVariableByName(cName);
+        writer.write(".text\n");
+        for (FunctionIR functionIR: programIR.getFunctions()) {
+            if (functionIR.getFunctionName().equals("main")) {
+                writer.write(".globl main\n");
+            }
+            translateFunction(functionIR, programIR);
 
-        LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, c.typeStructure.base);
-        String aRegister = aLoaded.getRegister();
-        writer.write(aLoaded.loadAssembly());
-
-        LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, c.typeStructure.base);
-        String bRegister = bLoaded.getRegister();
-        writer.write(bLoaded.loadAssembly());
-
-        LoadedVariable cLoaded = new LoadedVariable(cName, functionIR, tempRegisterAllocator, c.typeStructure.base);
-        String cRegister = cLoaded.getRegister();
-
-        if (!c.typeStructure.isBaseInt()) {
-            binop += ".s";
         }
-
-        writer.write(String.format("%s %s, %s, %s\n", binop, cRegister, aRegister, bRegister));
-        writer.write(cLoaded.flushAssembly());
     }
+
+    private void translateStaticDataSection(ProgramIR programIR) {
+        writer.write(".data\n");
+        for (BackendVariable staticVar : programIR.getStaticVariables()) {
+            String description = "";
+            if (staticVar.typeStructure.isArray()){
+                description = String.format(".space %s", staticVar.sizeInBytes());
+            } else if (staticVar.typeStructure.base == BaseType.INT) {
+                description = ".word 0";
+            } else if (staticVar.typeStructure.base == BaseType.FLOAT) {
+                description = ".float 0.0";
+            }
+            writer.write(String.format("%s: %s\n", staticVar.staticName(), description));
+        }
+    }
+
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
         writer.write(functionIR.getFunctionName() + ":\n");
@@ -443,6 +444,34 @@ class MIPSGenerator {
 
             }
         }
+    }
+
+    private void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
+        writer.write("move $fp, $sp\n");
+
+        TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+        String aName = instr.getIthCode(1);
+        String bName = instr.getIthCode(2);
+        String cName = instr.getIthCode(3);
+        BackendVariable c = functionIR.fetchVariableByName(cName);
+
+        LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, c.typeStructure.base);
+        String aRegister = aLoaded.getRegister();
+        writer.write(aLoaded.loadAssembly());
+
+        LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, c.typeStructure.base);
+        String bRegister = bLoaded.getRegister();
+        writer.write(bLoaded.loadAssembly());
+
+        LoadedVariable cLoaded = new LoadedVariable(cName, functionIR, tempRegisterAllocator, c.typeStructure.base);
+        String cRegister = cLoaded.getRegister();
+
+        if (!c.typeStructure.isBaseInt()) {
+            binop += ".s";
+        }
+
+        writer.write(String.format("%s %s, %s, %s\n", binop, cRegister, aRegister, bRegister));
+        writer.write(cLoaded.flushAssembly());
     }
 
     private void handleSaveRegData(int saveRegOffset, String intCommand, String floatCommand) {
