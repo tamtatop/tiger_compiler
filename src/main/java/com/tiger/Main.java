@@ -138,9 +138,10 @@ class NaiveRegisterAllocator implements RegisterAllocator{
 class MIPSGenerator {
     private final CancellableWriter writer;
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
-    private static final HashMap<String, String> asmBranchOp = new HashMap<>();
-    private static final ArrayList<String> floatSaveRegs = new ArrayList<String>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
+    private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
+    private static final HashMap<String, String> asmFloatBranchOp = new HashMap<>();
     private static final ArrayList<String> intSaveRegs = new ArrayList<String>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
+    private static final ArrayList<String> floatSaveRegs = new ArrayList<String>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
 
 
     static {
@@ -151,12 +152,19 @@ class MIPSGenerator {
         asmBinaryOp.put("and", "and");
         asmBinaryOp.put("or", "or");
 
-        asmBranchOp.put("breq", "beq");
-        asmBranchOp.put("brneq", "bne");
-        asmBranchOp.put("brlt", "blt");
-        asmBranchOp.put("brgt", "bgt");
-        asmBranchOp.put("brleq", "ble");
-        asmBranchOp.put("brgeq", "bge");
+        asmIntBranchOp.put("breq", "beq");
+        asmIntBranchOp.put("brneq", "bne");
+        asmIntBranchOp.put("brlt", "blt");
+        asmIntBranchOp.put("brgt", "bgt");
+        asmIntBranchOp.put("brleq", "ble");
+        asmIntBranchOp.put("brgeq", "bge");
+
+        asmFloatBranchOp.put("breq", "c.eq.s");
+        asmFloatBranchOp.put("brneq", "c.ne.s");
+        asmFloatBranchOp.put("brlt", "c.lt.s");
+        asmFloatBranchOp.put("brgt", "c.gt.s");
+        asmFloatBranchOp.put("brleq", "c.le.s");
+        asmFloatBranchOp.put("brgeq", "c.ge.s");
     }
     public MIPSGenerator(CancellableWriter writer) {
         this.writer = writer;
@@ -214,7 +222,7 @@ class MIPSGenerator {
         writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
 
         int saveRegAddr = spOffset + 4;
-        spOffset = handleSaveRegData(spOffset, "sw", "s.s");
+        spOffset = handleSaveRegData(saveRegAddr, "sw", "s.s");
         writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
 
         for (IRentry iRentry : functionIR.getBody()) {
@@ -284,7 +292,9 @@ class MIPSGenerator {
                         String afterLoop = instr.getIthCode(1);
                         writer.write(String.format("j %s\n", afterLoop));
                     }
-                    case BRANCH -> translateBranchOperation(asmBranchOp.get(instr.getIthCode(0)), instr, functionIR);
+                    case BRANCH -> {
+                        translateBranchOperation(instr.getIthCode(0), instr, functionIR);
+                    }
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
                         if (returnVarName != null) {
@@ -412,16 +422,23 @@ class MIPSGenerator {
         return startReg;
     }
 
-    private void translateBranchOperation(String branchOp, IRInstruction instr, FunctionIR functionIR) {
+    private void translateBranchOperation(String irBranchOp, IRInstruction instr, FunctionIR functionIR) {
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
         String aName = instr.getIthCode(1);
         String bName = instr.getIthCode(2);
         String label = instr.getIthCode(3);
-        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, BaseType.INT);
-        LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, BaseType.INT);
+        BaseType aType = functionIR.fetchVariableByName(aName).typeStructure.base;
+        BaseType bType = functionIR.fetchVariableByName(bName).typeStructure.base;
+        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, aType);
+        LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, bType);
         writer.write(a.loadAssembly());
         writer.write(b.loadAssembly());
-        writer.write(String.format("%s %s, %s, %s\n", branchOp, a.getRegister(), b.getRegister(), label));
+        if (aType == BaseType.INT) {
+            writer.write(String.format("%s %s, %s, %s\n", asmIntBranchOp.get(irBranchOp), a.getRegister(), b.getRegister(), label));
+        } else {
+            writer.write(String.format("%s %s, %s\n", asmFloatBranchOp.get(irBranchOp), a.getRegister(), b.getRegister()));
+            writer.write(String.format("bc1t %s\n", label));
+        }
     }
 
     private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR){
