@@ -240,22 +240,32 @@ class MIPSGenerator {
 
         // ARGUMENT HANDLING:
         {
-            TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
             ArgumentRegisterAllocator argumentRegisterAllocator = new ArgumentRegisterAllocator();
+            int stackArgCounter = 0;
             for (BackendVariable argument : functionIR.getArguments()) {
+                // we can reset temp allocation on each copy
+                TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
+
                 String sourceReg = argumentRegisterAllocator.popArgOfType(argument.typeStructure.base);
                 LoadedVariable target = new LoadedVariable(argument, temporaryRegisterAllocator, argument.typeStructure.base);
+
+
                 if(sourceReg == null){
                     // arg is in stack
-                    // TODO: copy
-
-
+                    String loadInstr = switch (argument.typeStructure.base) {
+                        case INT -> "lw";
+                        case FLOAT -> "l.s";
+                    };
+                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), 2*WORD_SIZE + WORD_SIZE*stackArgCounter));
+                    stackArgCounter+=1;
                 } else {
-                    // arg is in reg
-                    // TODO: copy
-
+                    // arg is in sourceReg
+                    String moveInstr = switch (argument.typeStructure.base) {
+                        case INT -> "move";
+                        case FLOAT -> "mov.s";
+                    };
+                    writer.write(String.format("%s %s, %s\n", moveInstr, target.getRegister(), sourceReg));
                 }
-
             }
         }
 
