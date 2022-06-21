@@ -6,10 +6,12 @@ import com.tiger.ir.interfaces.IRInstruction;
 import com.tiger.ir.interfaces.IRentry;
 import com.tiger.ir.interfaces.ProgramIR;
 import com.tiger.types.BaseType;
+import com.tiger.types.TypeStructure;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import static com.tiger.backend.BackendVariable.WORD_SIZE;
 
@@ -113,6 +115,38 @@ public class MIPSGenerator {
         }
     }
 
+    private List<BackendVariable> getFunctionSignature(String name, ProgramIR programIR) {
+        if(Objects.equals(name, "printi")) {
+            return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
+        }
+        if(Objects.equals(name, "printf")) {
+            return new ArrayList<>(List.of(new BackendVariable("f", new TypeStructure(BaseType.FLOAT, 0))));
+        }
+        if(Objects.equals(name, "not")) {
+            return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
+        }
+        if(Objects.equals(name, "exit")) {
+            return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
+        }
+        return programIR.getFunctionByName(name).getArguments();
+    }
+
+    private BaseType getReturnType(String name, ProgramIR programIR) {
+        if(Objects.equals(name, "printi")) {
+            return null;
+        }
+        if(Objects.equals(name, "printf")) {
+            return null;
+        }
+        if(Objects.equals(name, "not")) {
+            return BaseType.INT;
+        }
+        if(Objects.equals(name, "exit")) {
+            return null;
+        }
+        return programIR.getFunctionByName(name).getReturnType();
+    }
+
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
         if (functionIR.getFunctionName().equals("main")) {
@@ -165,7 +199,7 @@ public class MIPSGenerator {
                 TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
 
                 String sourceReg = argumentRegisterAllocator.popArgOfType(argument.typeStructure.base);
-                LoadedVariable target = new LoadedVariable(argument, temporaryRegisterAllocator, argument.typeStructure.base);
+                LoadedVariable target = new LoadedVariable(argument.name, functionIR, temporaryRegisterAllocator, argument.typeStructure.base);
 
 
                 if (sourceReg == null) {
@@ -260,8 +294,8 @@ public class MIPSGenerator {
                     case RETURN -> {
                         String returnVarName = instr.getIthCode(1);
                         if (returnVarName != null) {
-                            BackendVariable retVar = functionIR.fetchVariableByName(returnVarName);
-                            String retVarRegister = retVar.getAssignedRegister();
+                            LoadedVariable retVar = new LoadedVariable(returnVarName, functionIR, new TemporaryRegisterAllocator(), functionIR.getReturnType());
+                            String retVarRegister = retVar.getRegister();
                             if (functionIR.getReturnType() == BaseType.INT) {
                                 writer.write(String.format("move, $v0, %s\n", retVarRegister));
                             } else {
@@ -289,18 +323,17 @@ public class MIPSGenerator {
                             i = 2;
                         }
                         String callingFunctionName = instr.getIthCode(i);
-                        FunctionIR callingFunction = programIR.getFunctionByName(callingFunctionName);
-//                        ArrayList<BackendVariable> arguments = new ArrayList<BackendVariable>();
-
+                       // FunctionIR callingFunction = programIR.getFunctionByName(callingFunctionName);
+                        List<BackendVariable> arguments = getFunctionSignature(callingFunctionName, programIR);
                         i += 1;
                         int stackVarIdx = 0;
-                        assert instr.size() == i + callingFunction.getArguments().size();
-                        for (int argIdx = 0; argIdx < callingFunction.getArguments().size(); argIdx++) {
+                        assert instr.size() == i + arguments.size();
+                        for (int argIdx = 0; argIdx < arguments.size(); argIdx++) {
                             // we can reset temp allocation on each copy
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
 
                             String argName = instr.getIthCode(i + argIdx);
-                            BaseType argType = callingFunction.getArguments().get(argIdx).typeStructure.base;
+                            BaseType argType = arguments.get(argIdx).typeStructure.base;
                             LoadedVariable arg = new LoadedVariable(argName, functionIR, tempRegisterAllocator, argType);
                             String argRegister = argRegisterAllocator.popArgOfType(argType);
 
@@ -336,7 +369,7 @@ public class MIPSGenerator {
                             } else {
                                 returnedValueRegister = "$f0";
                             }
-                            if (callingFunction.getReturnType() == BaseType.INT && flushVarType == BaseType.FLOAT) {
+                            if (getReturnType(callingFunctionName, programIR) == BaseType.INT && flushVarType == BaseType.FLOAT) {
                                 writer.write("mtc1 $v0, $f0\n");
                                 writer.write("cvt.s.w $f0, $f0\n");
                             }
@@ -418,13 +451,27 @@ public class MIPSGenerator {
         String aName = instr.getIthCode(1);
         String bName = instr.getIthCode(2);
         String label = instr.getIthCode(3);
-        BaseType aType = functionIR.fetchVariableByName(aName).typeStructure.base;
-        BaseType bType = functionIR.fetchVariableByName(bName).typeStructure.base;
-        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, aType);
-        LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, bType);
+        BaseType type = null;
+        if(functionIR.fetchVariableByName(aName) != null){
+            type = functionIR.fetchVariableByName(aName).typeStructure.base;
+        }
+        if(functionIR.fetchVariableByName(bName) != null){
+            type = functionIR.fetchVariableByName(bName).typeStructure.base;
+        }
+        if(type == null){
+            try {
+                Integer.parseInt(aName);
+                type = BaseType.INT;
+            } catch (NumberFormatException e) {
+                type = BaseType.FLOAT;
+            }
+        }
+
+        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, type);
+        LoadedVariable b = new LoadedVariable(bName, functionIR, tempRegisterAllocator, type);
         writer.write(a.loadAssembly());
         writer.write(b.loadAssembly());
-        if (aType == BaseType.INT) {
+        if (type == BaseType.INT) {
             writer.write(String.format("%s %s, %s, %s\n", asmIntBranchOp.get(irBranchOp), a.getRegister(), b.getRegister(), label));
         } else {
             writer.write(String.format("%s %s, %s\n", asmFloatBranchOp.get(irBranchOp), a.getRegister(), b.getRegister()));

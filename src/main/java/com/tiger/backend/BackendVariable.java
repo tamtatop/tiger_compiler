@@ -5,6 +5,8 @@ import com.tiger.backend.TemporaryRegisterAllocator;
 import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
+import static com.tiger.ir.IrGenerator.mangledName;
+
 
 public class BackendVariable {
     public final static int WORD_SIZE = 4;
@@ -22,9 +24,9 @@ public class BackendVariable {
     public int stackOffset;
 
     public BackendVariable(NakedVariable nakedBase, boolean isStatic) {
-        this.name = nakedBase.name;
+        this.name = mangledName(nakedBase);
         this.typeStructure = nakedBase.typeStructure;
-        this.allocated = false;
+        this.allocated = isStatic;
         this.registerIndex = -1;
         this.isStatic = isStatic;
     }

@@ -94,6 +94,9 @@ public class Main {
         System.out.println("program name: " + finalIr.getProgramName());
 
         CompilerBackend.runBackend(finalIr, cfgWriter, livenessWriter, mipsWriter);
+        cfgWriter.commit();
+        livenessWriter.commit();
+        mipsWriter.commit();
     }
 
 

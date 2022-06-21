@@ -35,7 +35,7 @@ public class IrGenerator {
         this.staticIr = new StringWriter(0);
     }
 
-    private String mangledName(NakedVariable v) {
+    public static String mangledName(NakedVariable v) {
         if (v.scopeName == null) {
             return "_" + v.name;
         } else {
@@ -282,9 +282,9 @@ public class IrGenerator {
     }
 
     public void emitCall(FunctionSymbol func, ArrayList<NakedVariable> args) {
-        funcIr.write(String.format("call %s, %s\n",  func.name, callArgs(args)));
+        funcIr.write(String.format("call, %s, %s\n",  func.name, callArgs(args)));
     }
     public void emitCallR(FunctionSymbol func, ArrayList<NakedVariable> args, NakedVariable target) {
-        funcIr.write(String.format("call %s, %s, %s\n", mangledName(target), func.name, callArgs(args)));
+        funcIr.write(String.format("callr, %s, %s, %s\n", mangledName(target), func.name, callArgs(args)));
     }
 }

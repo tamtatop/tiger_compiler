@@ -108,7 +108,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         public Instruction(String op, List<String> args) {
             this.op = op;
-            this.args = args.stream().filter(p -> p.equals("")).toList();
+            this.args = args.stream().filter(p -> !p.equals("")).toList();
         }
 
         @Override
@@ -163,7 +163,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             if ("return".equals(op)) {
                 return IRInstructionType.RETURN;
             }
-            if ("call".equals(op)) {
+            if ("call".equals(op) || "callr".equals(op)) {
                 return IRInstructionType.CALL;
             }
             if ("array_store".equals(op)) {
@@ -241,7 +241,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
             if (line.length() == 0) return;
             if (!line.contains(":")) {
                 int opEndIdx = line.indexOf(",");
-                String op = line.substring(0, opEndIdx);
+                String op = line.substring(0, opEndIdx).trim();
                 List<String> args = Arrays.stream(line.trim().split(",")).map(String::trim).toList();
                 entries.add(new Instruction(op, args));
             } else {
