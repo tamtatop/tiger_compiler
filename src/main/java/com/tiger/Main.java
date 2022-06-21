@@ -143,7 +143,6 @@ class MIPSGenerator {
     private static final ArrayList<String> intSaveRegs = new ArrayList<>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
     private static final ArrayList<String> floatSaveRegs = new ArrayList<>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
 
-
     static {
         asmBinaryOp.put("add", "add");
         asmBinaryOp.put("sub", "sub");
@@ -165,6 +164,7 @@ class MIPSGenerator {
         asmFloatBranchOp.put("brgt", "c.gt.s");
         asmFloatBranchOp.put("brleq", "c.le.s");
         asmFloatBranchOp.put("brgeq", "c.ge.s");
+
     }
 
     public MIPSGenerator(CancellableWriter writer) {
@@ -176,12 +176,36 @@ class MIPSGenerator {
 
         writer.write(".text\n");
         for (FunctionIR functionIR: programIR.getFunctions()) {
-            if (functionIR.getFunctionName().equals("main")) {
-                writer.write(".globl main\n");
-            }
             translateFunction(functionIR, programIR);
-
         }
+        writer.write("""
+
+printi:
+li $v0, 1
+syscall
+jr $ra
+
+printf:
+li $v0, 2
+syscall
+jr $ra
+
+
+not:
+beq $a0, $zero, not0
+not1:
+move $v0, $zero
+jr $ra
+not0:
+li $v0, 1
+jr $ra
+
+
+exit:
+li $v0, 17
+syscall
+jr $ra
+""");
     }
 
     private void translateStaticDataSection(ProgramIR programIR) {
@@ -201,6 +225,9 @@ class MIPSGenerator {
 
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
+        if (functionIR.getFunctionName().equals("main")) {
+            writer.write(".globl main\n");
+        }
         writer.write(functionIR.getFunctionName() + ":\n");
 
         // space to store old fp
