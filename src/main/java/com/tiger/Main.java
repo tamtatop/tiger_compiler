@@ -91,7 +91,7 @@ public class Main {
 
         compilerFront.visitTigerProgram(parser.tiger_program());
 
-        if(errorLogger.anyError()) {
+        if (errorLogger.anyError()) {
             symbolTableWriter.cancel();
             irWriter.cancel();
             System.exit(4);
@@ -111,7 +111,7 @@ public class Main {
 
 class CompilerBackend {
 
-    public static void runBackend(ProgramIR ir,  CancellableWriter cfgWriter, CancellableWriter livenessWriter, CancellableWriter mipsWriter) {
+    public static void runBackend(ProgramIR ir, CancellableWriter cfgWriter, CancellableWriter livenessWriter, CancellableWriter mipsWriter) {
 
     }
 
@@ -123,12 +123,12 @@ interface RegisterAllocator {
 
 }
 
-class NaiveRegisterAllocator implements RegisterAllocator{
+class NaiveRegisterAllocator implements RegisterAllocator {
 
     @Override
     public void runAllocationAlgorithm(ProgramIR ir) {
-        for (FunctionIR functionIR: ir.getFunctions()) {
-            for (BackendVariable localVariable: functionIR.getLocalVariables()){
+        for (FunctionIR functionIR : ir.getFunctions()) {
+            for (BackendVariable localVariable : functionIR.getLocalVariables()) {
                 localVariable.spill();
             }
         }
@@ -140,8 +140,8 @@ class MIPSGenerator {
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
     private static final HashMap<String, String> asmFloatBranchOp = new HashMap<>();
-    private static final ArrayList<String> intSaveRegs = new ArrayList<String>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
-    private static final ArrayList<String> floatSaveRegs = new ArrayList<String>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
+    private static final ArrayList<String> intSaveRegs = new ArrayList<>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
+    private static final ArrayList<String> floatSaveRegs = new ArrayList<>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
 
 
     static {
@@ -166,6 +166,7 @@ class MIPSGenerator {
         asmFloatBranchOp.put("brleq", "c.le.s");
         asmFloatBranchOp.put("brgeq", "c.ge.s");
     }
+
     public MIPSGenerator(CancellableWriter writer) {
         this.writer = writer;
     }
@@ -179,9 +180,6 @@ class MIPSGenerator {
         String cName = instr.getIthCode(3);
         BackendVariable c = functionIR.fetchVariableByName(cName);
 
-        // TODO: handle immediate binops eg: addi
-        // TODO: handle floats in ops eg: add.s
-
         LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, c.typeStructure.base);
         String aRegister = aLoaded.getRegister();
         writer.write(aLoaded.loadAssembly());
@@ -193,7 +191,9 @@ class MIPSGenerator {
         LoadedVariable cLoaded = new LoadedVariable(cName, functionIR, tempRegisterAllocator, c.typeStructure.base);
         String cRegister = cLoaded.getRegister();
 
-        if (!c.typeStructure.isBaseInt()) { binop += ".s"; }
+        if (!c.typeStructure.isBaseInt()) {
+            binop += ".s";
+        }
 
         writer.write(String.format("%s %s, %s, %s\n", binop, cRegister, aRegister, bRegister));
         writer.write(cLoaded.flushAssembly());
@@ -220,12 +220,12 @@ class MIPSGenerator {
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
             if (localVariable.isSpilled) {
                 spOffset += localVariable.sizeInBytes();
-                    localVariable.stackOffset = -spOffset;
+                localVariable.stackOffset = -spOffset;
             }
         }
 
         // saved regs
-        spOffset += intSaveRegs.size()*WORD_SIZE + floatSaveRegs.size()*WORD_SIZE;
+        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
         int saveRegOffset = -spOffset;
 
         // saved ra
@@ -250,14 +250,14 @@ class MIPSGenerator {
                 LoadedVariable target = new LoadedVariable(argument, temporaryRegisterAllocator, argument.typeStructure.base);
 
 
-                if(sourceReg == null){
+                if (sourceReg == null) {
                     // arg is in stack
                     String loadInstr = switch (argument.typeStructure.base) {
                         case INT -> "lw";
                         case FLOAT -> "l.s";
                     };
-                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), 2*WORD_SIZE + WORD_SIZE*stackArgCounter));
-                    stackArgCounter+=1;
+                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), 2 * WORD_SIZE + WORD_SIZE * stackArgCounter));
+                    stackArgCounter += 1;
                 } else {
                     // arg is in sourceReg
                     String moveInstr = switch (argument.typeStructure.base) {
@@ -280,7 +280,7 @@ class MIPSGenerator {
                         String cName = instr.getIthCode(3);
 
                         BackendVariable a = functionIR.fetchVariableByName(aName);
-                        if(cName == null && !a.typeStructure.isArray()) {
+                        if (cName == null && !a.typeStructure.isArray()) {
                             // assign, a, b,
                             LoadedVariable aLoaded = new LoadedVariable(aName, functionIR, tempRegisterAllocator, a.typeStructure.base);
                             String aRegister = aLoaded.getRegister();
@@ -291,7 +291,7 @@ class MIPSGenerator {
 
                             writer.write(String.format("move %s, %s\n", aRegister, bRegister));
                             writer.write(aLoaded.flushAssembly());
-                        } else if(cName != null) {
+                        } else if (cName != null) {
                             // assign, X, 100, 10
                             // X = [10]*100
                             String XRegister = loadArrayBeginning(tempRegisterAllocator, a);
@@ -304,9 +304,9 @@ class MIPSGenerator {
                             };
 
                             for (int i = 0; i < Integer.parseInt(bName); i++) {
-                                writer.write(String.format("%s %s, %d(%s)\n",storeInstruction,  v.getRegister(), WORD_SIZE*i, XRegister));
+                                writer.write(String.format("%s %s, %d(%s)\n", storeInstruction, v.getRegister(), WORD_SIZE * i, XRegister));
                             }
-                        } else if(a.typeStructure.isArray()) {
+                        } else if (a.typeStructure.isArray()) {
                             // assign, X, Y,
                             // X[..] = Y[..]
                             String XRegister = loadArrayBeginning(tempRegisterAllocator, a);
@@ -325,9 +325,9 @@ class MIPSGenerator {
 
                             String copyRegister = tempRegisterAllocator.popInt();
 
-                            for(int i=0; i < a.typeStructure.arraySize; i++) {
-                                writer.write(String.format("%s %s, %d(%s)", loadInstruction, copyRegister, WORD_SIZE*i, XRegister));
-                                writer.write(String.format("%s %s, %d(%s)", storeInstruction, copyRegister, WORD_SIZE*i, YRegister));
+                            for (int i = 0; i < a.typeStructure.arraySize; i++) {
+                                writer.write(String.format("%s %s, %d(%s)", loadInstruction, copyRegister, WORD_SIZE * i, XRegister));
+                                writer.write(String.format("%s %s, %d(%s)", storeInstruction, copyRegister, WORD_SIZE * i, YRegister));
                             }
                         }
                     }
@@ -382,7 +382,7 @@ class MIPSGenerator {
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
 
                             String argName = instr.getIthCode(i + argIdx);
-                            BaseType argType =  callingFunction.getArguments().get(argIdx).typeStructure.base;
+                            BaseType argType = callingFunction.getArguments().get(argIdx).typeStructure.base;
                             LoadedVariable arg = new LoadedVariable(argName, functionIR, tempRegisterAllocator, argType);
                             String argRegister = argRegisterAllocator.popArgOfType(argType);
 
@@ -400,12 +400,11 @@ class MIPSGenerator {
                             }
                             if (argRegister == null) {
                                 stackVarIdx += 1;
-                                writer.write(String.format("%s $%s, %d($fp)\n", storeInstr, arg.getRegister(), -spOffset - stackVarIdx*4));
+                                writer.write(String.format("%s $%s, %d($fp)\n", storeInstr, arg.getRegister(), -spOffset - stackVarIdx * 4));
                             } else {
                                 writer.write(String.format("%s $%s, $%s\n", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
-                        // TODO: jump to generate new function or smthn. check if it's correct
                         writer.write(String.format("jal %s:\n", callingFunctionName));
 
                         if (instr.getIthCode(0).equals("callr")) {
@@ -419,7 +418,7 @@ class MIPSGenerator {
                             } else {
                                 returnedValueRegister = "$f0";
                             }
-                            if (callingFunction.getReturnType() == BaseType.INT && flushVarType == BaseType.FLOAT){
+                            if (callingFunction.getReturnType() == BaseType.INT && flushVarType == BaseType.FLOAT) {
                                 writer.write("mtc1 $v0, $f0\n");
                                 writer.write("cvt.s.w $f0, $f0\n");
                             }
@@ -440,18 +439,18 @@ class MIPSGenerator {
                     }
                 }
 
-            } else if(iRentry.isLabel()) {
+            } else if (iRentry.isLabel()) {
 
             }
         }
     }
 
     private void handleSaveRegData(int saveRegOffset, String intCommand, String floatCommand) {
-        for (String saveReg : intSaveRegs){
+        for (String saveReg : intSaveRegs) {
             saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, saveRegOffset));
         }
-        for (String saveReg : floatSaveRegs){
+        for (String saveReg : floatSaveRegs) {
             saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, saveRegOffset));
         }
@@ -459,7 +458,7 @@ class MIPSGenerator {
 
     private String loadArrayBeginning(TemporaryRegisterAllocator tempRegisterAllocator, BackendVariable a) {
         String startReg = tempRegisterAllocator.popInt();
-        if(a.isStatic) {
+        if (a.isStatic) {
             writer.write(String.format("la %s, %s\n", startReg, a.staticName()));
         } else {
             writer.write(String.format("move %s, $fp\n", startReg));
@@ -487,7 +486,7 @@ class MIPSGenerator {
         }
     }
 
-    private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR){
+    private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR) {
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
 
         String arrName = instr.getIthCode(1);
@@ -502,7 +501,7 @@ class MIPSGenerator {
         writer.write(String.format("add %s, %s, %s\n", i.getRegister(), i.getRegister(), arrayBeginningRegister));
 
         String aName = instr.getIthCode(3);
-        LoadedVariable a = new LoadedVariable(aName ,functionIR, tempRegisterAllocator, arr.typeStructure.base);
+        LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, arr.typeStructure.base);
 
         return new ArrStoreLoadData(a, i.getRegister());
     }
