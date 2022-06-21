@@ -18,7 +18,7 @@ public class LoadedVariable {
     BackendVariable backing;
     String constval;
     BaseType type;
-    private final BackingType backingType;
+    private BackingType backingType;
 
     public static boolean isNumeric(String str) {
         try {
@@ -26,6 +26,23 @@ public class LoadedVariable {
             return true;
         } catch (NumberFormatException e) {
             return false;
+        }
+    }
+
+    private void initWithBacking(BackendVariable backing, TemporaryRegisterAllocator tempAllocator, BaseType type) {
+        this.backing = backing;
+        assert backing.allocated;
+        assert !backing.typeStructure.isArray();
+        if (backing.isStatic) {
+            this.loadedRegister = tempAllocator.popTempOfType(type);
+            this.backingType = BackingType.STATIC;
+        } else if (backing.isSpilled) {
+            this.loadedRegister = tempAllocator.popTempOfType(type);
+            this.backingType = BackingType.STACK;
+        } else {
+            // TODO: don't use extra register when possible
+            this.loadedRegister = tempAllocator.popTempOfType(type);
+            this.backingType = BackingType.REG;
         }
     }
 
@@ -37,21 +54,13 @@ public class LoadedVariable {
             this.backingType = BackingType.CONST;
             this.loadedRegister = tempAllocator.popTempOfType(type);
         } else {
-            this.backing = f.fetchVariableByName(s);
-            assert backing.allocated;
-            assert !backing.typeStructure.isArray();
-            if (backing.isStatic) {
-                this.loadedRegister = tempAllocator.popTempOfType(type);
-                this.backingType = BackingType.STATIC;
-            } else if (backing.isSpilled) {
-                this.loadedRegister = tempAllocator.popTempOfType(type);
-                this.backingType = BackingType.STACK;
-            } else {
-                // TODO: don't use extra register when possible
-                this.loadedRegister = tempAllocator.popTempOfType(type);
-                this.backingType = BackingType.REG;
-            }
+            initWithBacking(f.fetchVariableByName(s), tempAllocator, type);
         }
+    }
+
+    public LoadedVariable(BackendVariable backing, TemporaryRegisterAllocator tempAllocator, BaseType type) {
+        this.type = type;
+        initWithBacking(backing, tempAllocator, type);
     }
 
     public String loadAssembly() {

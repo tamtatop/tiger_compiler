@@ -207,23 +207,57 @@ class MIPSGenerator {
         writer.write("sw $fp, 0($sp)\n");
         writer.write("move $fp, $sp\n");
 
+        // ======================== STACK LAYOUT ====================================================
+        //         sp                                     fp
+        //         V                                       V
+        //         |          stack frame                  | old fp | ra  | stackarg0 | stackarg1 ...
+        //  sizes: |           spOffset                    |   4    |  4  |     4     |   4       ...
+        //         | saved ra | saved regs | spilled vars  |
+        // ==========================================================================================
+
+        // saved spilled vars
         int spOffset = 0;
-//        int fp
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
             if (localVariable.isSpilled) {
                 spOffset += localVariable.sizeInBytes();
                     localVariable.stackOffset = -spOffset;
             }
         }
-        spOffset += intSaveRegs.size()*4 + floatSaveRegs.size()*4;
-        // for $ra
-        spOffset += 4;
 
+        // saved regs
+        spOffset += intSaveRegs.size()*WORD_SIZE + floatSaveRegs.size()*WORD_SIZE;
+        int saveRegOffset = -spOffset;
+
+        // saved ra
+        spOffset += WORD_SIZE;
+
+        // allocate stack frame
         writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
 
-        int saveRegAddr = spOffset + 4;
-        spOffset = handleSaveRegData(saveRegAddr, "sw", "s.s");
+        // actually save regs and ra
+        handleSaveRegData(saveRegOffset, "sw", "s.s");
         writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+
+        // ARGUMENT HANDLING:
+        {
+            TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
+            ArgumentRegisterAllocator argumentRegisterAllocator = new ArgumentRegisterAllocator();
+            for (BackendVariable argument : functionIR.getArguments()) {
+                String sourceReg = argumentRegisterAllocator.popArgOfType(argument.typeStructure.base);
+                LoadedVariable target = new LoadedVariable(argument, temporaryRegisterAllocator, argument.typeStructure.base);
+                if(sourceReg == null){
+                    // arg is in stack
+                    // TODO: copy
+
+
+                } else {
+                    // arg is in reg
+                    // TODO: copy
+
+                }
+
+            }
+        }
 
         for (IRentry iRentry : functionIR.getBody()) {
             if (iRentry.isInstruction()) {
@@ -306,7 +340,7 @@ class MIPSGenerator {
                                 writer.write(String.format("move, $f0, %s\n", retVarRegister));
                             }
                         }
-                        handleSaveRegData(saveRegAddr, "lw", "l.s");
+                        handleSaveRegData(saveRegOffset, "lw", "l.s");
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
 
@@ -399,16 +433,15 @@ class MIPSGenerator {
         }
     }
 
-    private int handleSaveRegData(int saveRegAddr, String intCommand, String floatCommand) {
+    private void handleSaveRegData(int saveRegOffset, String intCommand, String floatCommand) {
         for (String saveReg : intSaveRegs){
-            saveRegAddr += 4;
-            writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, -saveRegAddr));
+            saveRegOffset += WORD_SIZE;
+            writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, saveRegOffset));
         }
         for (String saveReg : floatSaveRegs){
-            saveRegAddr += 4;
-            writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, -saveRegAddr));
+            saveRegOffset += WORD_SIZE;
+            writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, saveRegOffset));
         }
-        return saveRegAddr;
     }
 
     private String loadArrayBeginning(TemporaryRegisterAllocator tempRegisterAllocator, BackendVariable a) {
