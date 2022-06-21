@@ -20,6 +20,7 @@ import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -138,6 +139,9 @@ class MIPSGenerator {
     private final CancellableWriter writer;
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmBranchOp = new HashMap<>();
+    private static final ArrayList<String> floatSaveRegs = new ArrayList<String>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
+    private static final ArrayList<String> intSaveRegs = new ArrayList<String>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
+
 
     static {
         asmBinaryOp.put("add", "add");
@@ -198,15 +202,14 @@ class MIPSGenerator {
                     localVariable.stackOffset = -spOffset;
             }
         }
+        spOffset += intSaveRegs.size()*4 + floatSaveRegs.size()*4;
         // for $ra
         spOffset += 4;
 
         writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
-        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
-            if (localVariable.isSpilled) {
-                writer.write(String.format("sw $, %d($fp)\n", localVariable.stackOffset));
-            }
-        }
+
+        int saveRegAddr = spOffset + 4;
+        spOffset = handleSaveRegData(spOffset, "sw", "s.s");
         writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
 
         for (IRentry iRentry : functionIR.getBody()) {
@@ -288,7 +291,7 @@ class MIPSGenerator {
                                 writer.write(String.format("move, $f0, %s\n", retVarRegister));
                             }
                         }
-
+                        handleSaveRegData(saveRegAddr, "lw", "l.s");
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
                         writer.write("jr $ra\n");
@@ -373,6 +376,18 @@ class MIPSGenerator {
 
             }
         }
+    }
+
+    private int handleSaveRegData(int saveRegAddr, String intCommand, String floatCommand) {
+        for (String saveReg : intSaveRegs){
+            saveRegAddr += 4;
+            writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, -saveRegAddr));
+        }
+        for (String saveReg : floatSaveRegs){
+            saveRegAddr += 4;
+            writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, -saveRegAddr));
+        }
+        return saveRegAddr;
     }
 
     private String loadArrayBeginning(TemporaryRegisterAllocator tempRegisterAllocator, BackendVariable a) {
