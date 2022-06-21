@@ -441,7 +441,7 @@ class MIPSGenerator {
                 }
 
             } else if (iRentry.isLabel()) {
-
+                writer.write(String.format("%s:\n", iRentry.asLabel().getName()));
             }
         }
     }
