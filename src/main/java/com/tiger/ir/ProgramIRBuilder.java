@@ -102,6 +102,18 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         }
     }
 
+    private static boolean isVar(String str) {
+        if(str==null){
+            return false;
+        }
+        try {
+            Double.parseDouble(str);
+            return false;
+        } catch (NumberFormatException e) {
+            return true;
+        }
+    }
+
     private static class Instruction implements IRInstruction, IRentry {
         String op;
         List<String> args;
@@ -113,14 +125,68 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public List<String> reads() {
-            // TODO: implement
-            return null;
+            String a = this.getIthCode(1);
+            String b = this.getIthCode(1);
+            String c = this.getIthCode(1);
+            return switch (this.getType()) {
+                case BINOP, BRANCH -> {
+                    ArrayList<String> r = new ArrayList<>();
+                    if(isVar(a)) {
+                        r.add(a);
+                    }
+                    if(isVar(b)) {
+                        r.add(b);
+                    }
+                    yield r;
+                }
+                case GOTO -> List.of();
+                case RETURN -> isVar(a) ? List.of(a) : List.of();
+                case CALL -> {
+                    ArrayList<String> r = new ArrayList<>();
+                    for (int i = this.op.equals("call") ? 2 : 3; i < args.size(); i++) {
+                        if(isVar(getIthCode(i))) {
+                            r.add(getIthCode(i));
+                        }
+                    }
+                    yield r;
+                }
+                case ASSIGN, ARRAYSTORE, ARRAYLOAD -> {
+                    ArrayList<String> r = new ArrayList<>();
+                    if(isVar(b)) {
+                        r.add(b);
+                    }
+                    if(isVar(c)) {
+                        r.add(c);
+                    }
+                    yield r;
+                }
+            };
         }
 
         @Override
         public List<String> writes() {
-            // TODO: implement
-            return null;
+            String a = this.getIthCode(1);
+            String b = this.getIthCode(2);
+            String c = this.getIthCode(3);
+            return switch (this.getType()) {
+                case BINOP -> {
+                    assert c != null;
+                    yield List.of(c);
+                }
+                case RETURN, BRANCH, GOTO -> List.of();
+                case CALL -> {
+                    if (this.op.equals("callr")) {
+                        assert a != null;
+                        yield List.of(a);
+                    } else {
+                        yield List.of();
+                    }
+                }
+                case ASSIGN, ARRAYSTORE, ARRAYLOAD -> {
+                    assert a != null;
+                    yield List.of(a);
+                }
+            };
         }
 
         @Override
