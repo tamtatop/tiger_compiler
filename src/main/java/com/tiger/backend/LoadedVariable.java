@@ -55,9 +55,13 @@ public class LoadedVariable {
         }
     }
 
-    public LoadedVariable(BackendVariable backing, TemporaryRegisterAllocator tempAllocator, BaseType type) {
+    public LoadedVariable(BackendVariable backing, String reg, BaseType type) {
         this.type = type;
-        initWithBacking(backing, tempAllocator, type);
+        this.backing = backing;
+        //assert backing.allocated;
+        assert !backing.typeStructure.isArray();
+        this.loadedRegister = reg;
+        this.backingType = BackingType.STACK;
     }
 
     public String loadAssembly() {
