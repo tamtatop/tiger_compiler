@@ -4,8 +4,8 @@ _fun_sum:
 addiu $sp, $sp, -4
 sw $fp, 0($sp)
 move $fp, $sp
-addiu $sp, $sp, -140
-sw $ra, -140($fp)
+addiu $sp, $sp, -64
+sw $ra, -64($fp)
 move $t3, $a0
 sw $t3, -60($fp)
 move $t3, $a1
@@ -52,13 +52,13 @@ add $t1, $t3, $t2
 sw $t1, -36($fp)
 lw $t3, -36($fp)
 move, $v0, $t3
-lw $ra, -140($fp)
-addiu $sp, $sp, 140
+lw $ra, -64($fp)
+addiu $sp, $sp, 64
 lw $fp, 0($sp)
 addiu $sp, $sp, 4
 jr $ra
-lw $ra, -140($fp)
-addiu $sp, $sp, 140
+lw $ra, -64($fp)
+addiu $sp, $sp, 64
 lw $fp, 0($sp)
 addiu $sp, $sp, 4
 jr $ra
@@ -68,8 +68,8 @@ _fun_main:
 addiu $sp, $sp, -4
 sw $fp, 0($sp)
 move $fp, $sp
-addiu $sp, $sp, -124
-sw $ra, -124($fp)
+addiu $sp, $sp, -48
+sw $ra, -48($fp)
 li $t2, 1
 move $t3, $t2
 sw $t3, -12($fp)
@@ -104,13 +104,13 @@ move $a2, $t3
 lw $t3, -44($fp)
 move $a3, $t3
 lw $t3, -40($fp)
-sw $t3, -128($fp)
+sw $t3, -52($fp)
 lw $t3, -36($fp)
-sw $t3, -132($fp)
+sw $t3, -56($fp)
 lw $t3, -28($fp)
-sw $t3, -136($fp)
+sw $t3, -60($fp)
 lw $t3, -24($fp)
-sw $t3, -140($fp)
+sw $t3, -64($fp)
 jal _fun_sum
 addiu $sp, $sp, 16
 move $t3, $v0
@@ -128,13 +128,13 @@ move $t3, $t2
 sw $t3, -32($fp)
 lw $t3, -32($fp)
 move, $v0, $t3
-lw $ra, -124($fp)
-addiu $sp, $sp, 124
+lw $ra, -48($fp)
+addiu $sp, $sp, 48
 lw $fp, 0($sp)
 addiu $sp, $sp, 4
 jr $ra
-lw $ra, -124($fp)
-addiu $sp, $sp, 124
+lw $ra, -48($fp)
+addiu $sp, $sp, 48
 lw $fp, 0($sp)
 addiu $sp, $sp, 4
 jr $ra

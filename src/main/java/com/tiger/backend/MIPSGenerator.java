@@ -1,5 +1,9 @@
 package com.tiger.backend;
 
+import com.tiger.backend.allocationalgorithm.IRBlock;
+import com.tiger.backend.allocationalgorithm.IntraBlockAllocator;
+import com.tiger.backend.allocationalgorithm.NaiveRegisterAllocator;
+import com.tiger.backend.allocationalgorithm.RegisterAllocationAlgorithm;
 import com.tiger.io.CancellableWriter;
 import com.tiger.ir.interfaces.FunctionIR;
 import com.tiger.ir.interfaces.IRInstruction;
@@ -73,12 +77,12 @@ public class MIPSGenerator {
         this.writer = writer;
     }
 
-    public void translateProgram(ProgramIR programIR) {
+    public void translateProgram(ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
         translateStaticDataSection(programIR);
 
         writer.write(".text\n");
         for (FunctionIR functionIR : programIR.getFunctions()) {
-            translateFunction(functionIR, programIR);
+            translateFunction(functionIR, programIR, algorithm);
         }
         writer.write("""
 
@@ -132,50 +136,184 @@ public class MIPSGenerator {
     }
 
     private List<BackendVariable> getFunctionSignature(String name, ProgramIR programIR) {
-        if(Objects.equals(name, "printi")) {
+        if (Objects.equals(name, "printi")) {
             return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
         }
-        if(Objects.equals(name, "printf")) {
+        if (Objects.equals(name, "printf")) {
             return new ArrayList<>(List.of(new BackendVariable("f", new TypeStructure(BaseType.FLOAT, 0))));
         }
-        if(Objects.equals(name, "not")) {
+        if (Objects.equals(name, "not")) {
             return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
         }
-        if(Objects.equals(name, "exit")) {
+        if (Objects.equals(name, "exit")) {
             return new ArrayList<>(List.of(new BackendVariable("i", new TypeStructure(BaseType.INT, 0))));
         }
         return programIR.getFunctionByName(name).getArguments();
     }
 
     private BaseType getReturnType(String name, ProgramIR programIR) {
-        if(Objects.equals(name, "printi")) {
+        if (Objects.equals(name, "printi")) {
             return null;
         }
-        if(Objects.equals(name, "printf")) {
+        if (Objects.equals(name, "printf")) {
             return null;
         }
-        if(Objects.equals(name, "not")) {
+        if (Objects.equals(name, "not")) {
             return BaseType.INT;
         }
-        if(Objects.equals(name, "exit")) {
+        if (Objects.equals(name, "exit")) {
             return null;
         }
         return programIR.getFunctionByName(name).getReturnType();
     }
 
 
-    public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
+    public void generateFunctionHeader(FunctionIR functionIR) {
         if (functionIR.getFunctionName().equals("main")) {
             writer.write(".globl main\n");
             writer.write("main" + ":\n");
         }
         writer.write("_fun_" + functionIR.getFunctionName() + ":\n");
+    }
 
-        // space to store old fp
-        writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
-        writer.write("sw $fp, 0($sp)\n");
-        writer.write("move $fp, $sp\n");
 
+    private int assignOffsetsToAllLocals(FunctionIR functionIR, int spOffset) {
+        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
+            spOffset += localVariable.sizeInBytes();
+            localVariable.stackOffset = -spOffset;
+        }
+        return spOffset;
+    }
+
+
+    private int assignOffsetsToSpilledLocals(FunctionIR functionIR, int spOffset) {
+        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
+            if(localVariable.isSpilled) {
+                spOffset += localVariable.sizeInBytes();
+                localVariable.stackOffset = -spOffset;
+            }
+        }
+        return spOffset;
+    }
+
+
+
+    private void copyArgumentValues(FunctionIR functionIR) {
+        ArgumentRegisterAllocator argumentRegisterAllocator = new ArgumentRegisterAllocator();
+        int stackArgCounter = 0;
+        for (BackendVariable argument : functionIR.getArguments()) {
+            // we can reset temp allocation on each copy
+            TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
+
+            String sourceReg = argumentRegisterAllocator.popArgOfType(argument.typeStructure.base);
+            LoadedVariable target = new LoadedVariable(argument.name, functionIR, temporaryRegisterAllocator, argument.typeStructure.base);
+
+
+            if (sourceReg == null) {
+                // arg is in stack
+                String loadInstr = switch (argument.typeStructure.base) {
+                    case INT -> "lw";
+                    case FLOAT -> "l.s";
+                };
+                writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), WORD_SIZE + WORD_SIZE * stackArgCounter));
+                stackArgCounter += 1;
+            } else {
+                // arg is in sourceReg
+                String moveInstr = switch (argument.typeStructure.base) {
+                    case INT -> "move";
+                    case FLOAT -> "mov.s";
+                };
+                writer.write(String.format("%s %s, %s\n", moveInstr, target.getRegister(), sourceReg));
+            }
+            writer.write(target.flushAssembly());
+        }
+    }
+
+    public void translateFunctionNaive(FunctionIR functionIR, ProgramIR programIR) {
+        NaiveRegisterAllocator.runAllocationAlgorithm(functionIR);
+
+        generateFunctionHeader(functionIR);
+        saveOldFramePointer();
+
+        int spOffset = 0;
+        spOffset = assignOffsetsToAllLocals(functionIR, spOffset);
+
+        // saved ra
+        spOffset += WORD_SIZE;
+
+        // allocate stack frame
+        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+
+        // actually save ra
+        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+
+        // ARGUMENT HANDLING:
+        copyArgumentValues(functionIR);
+
+        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, null);
+    }
+
+
+
+    public void translateFunctionIntraBlock(FunctionIR functionIR, ProgramIR programIR) {
+        List<IRBlock> blocks = IntraBlockAllocator.findBlocks(functionIR);
+
+        generateFunctionHeader(functionIR);
+        saveOldFramePointer();
+
+        int spOffset = 0;
+        spOffset = assignOffsetsToAllLocals(functionIR, spOffset);
+
+        // space for saved regs
+        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
+        int saveRegOffset = -spOffset;
+
+        // space for saved $ra
+        spOffset += WORD_SIZE;
+
+        // allocate stack frame
+        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+
+        // actually save regs and ra
+        handleSaveRegData(saveRegOffset, "sw", "s.s");
+        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+
+        // ARGUMENT HANDLING:
+        copyArgumentValues(functionIR);
+
+        for (IRBlock block : blocks) {
+            translateInstructions(functionIR, programIR, block.entries, spOffset, saveRegOffset);
+        }
+    }
+
+    public void translateFunctionBriggs(FunctionIR functionIR, ProgramIR programIR) {
+        generateFunctionHeader(functionIR);
+        saveOldFramePointer();
+
+        int spOffset = 0;
+        spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
+
+        // space for saved regs
+        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
+        int saveRegOffset = -spOffset;
+
+        // space for saved $ra
+        spOffset += WORD_SIZE;
+
+        // allocate stack frame
+        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+
+        // actually save regs and ra
+        handleSaveRegData(saveRegOffset, "sw", "s.s");
+        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+
+        // ARGUMENT HANDLING:
+        copyArgumentValues(functionIR);
+
+        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, saveRegOffset);
+    }
+
+    public void translateFunction(FunctionIR functionIR, ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
         // ======================== STACK LAYOUT ====================================================
         //         sp                                     fp
         //         V                                       V
@@ -184,62 +322,28 @@ public class MIPSGenerator {
         //         | saved ra | saved regs | spilled vars  |
         // ==========================================================================================
 
-        // saved spilled vars
-        int spOffset = 0;
-        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
-            if (localVariable.isSpilled) {
-                spOffset += localVariable.sizeInBytes();
-                localVariable.stackOffset = -spOffset;
+        switch (algorithm) {
+            case NAIVE -> {
+                translateFunctionNaive(functionIR, programIR);
+            }
+            case INTRABLOCK -> {
+                //     translateFunctionIntraBlock(functionIR, programIR);
+            }
+            case BRIGGS -> {
+                //   translateFunctionBriggs(functionIR, programIR);
             }
         }
+    }
 
-        // saved regs
-        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
-        int saveRegOffset = -spOffset;
+    private void saveOldFramePointer() {
+        // store old fp
+        writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
+        writer.write("sw $fp, 0($sp)\n");
+        writer.write("move $fp, $sp\n");
+    }
 
-        // saved ra
-        spOffset += WORD_SIZE;
-
-        // allocate stack frame
-        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
-
-        // actually save regs and ra
-        //handleSaveRegData(saveRegOffset, "sw", "s.s");
-        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
-
-        // ARGUMENT HANDLING:
-        {
-            ArgumentRegisterAllocator argumentRegisterAllocator = new ArgumentRegisterAllocator();
-            int stackArgCounter = 0;
-            for (BackendVariable argument : functionIR.getArguments()) {
-                // we can reset temp allocation on each copy
-                TemporaryRegisterAllocator temporaryRegisterAllocator = new TemporaryRegisterAllocator();
-
-                String sourceReg = argumentRegisterAllocator.popArgOfType(argument.typeStructure.base);
-                LoadedVariable target = new LoadedVariable(argument.name, functionIR, temporaryRegisterAllocator, argument.typeStructure.base);
-
-
-                if (sourceReg == null) {
-                    // arg is in stack
-                    String loadInstr = switch (argument.typeStructure.base) {
-                        case INT -> "lw";
-                        case FLOAT -> "l.s";
-                    };
-                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), WORD_SIZE + WORD_SIZE * stackArgCounter));
-                    stackArgCounter += 1;
-                } else {
-                    // arg is in sourceReg
-                    String moveInstr = switch (argument.typeStructure.base) {
-                        case INT -> "move";
-                        case FLOAT -> "mov.s";
-                    };
-                    writer.write(String.format("%s %s, %s\n", moveInstr, target.getRegister(), sourceReg));
-                }
-                writer.write(target.flushAssembly());
-            }
-        }
-
-        for (IRentry iRentry : functionIR.getBody()) {
+    private void translateInstructions(FunctionIR functionIR, ProgramIR programIR, List<IRentry> entries, int spOffset, Integer saveRegOffset) {
+        for (IRentry iRentry : entries) {
             if (iRentry.isInstruction()) {
                 IRInstruction instr = iRentry.asInstruction();
                 switch (instr.getType()) {
@@ -324,7 +428,9 @@ public class MIPSGenerator {
                                 writer.write(String.format("mov.s, $f0, %s\n", retVarRegister));
                             }
                         }
-                        //handleSaveRegData(saveRegOffset, "lw", "l.s");
+                        if(saveRegOffset != null) {
+                            handleSaveRegData(saveRegOffset, "lw", "l.s");
+                        }
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
 
@@ -345,7 +451,7 @@ public class MIPSGenerator {
                             i = 2;
                         }
                         String callingFunctionName = instr.getIthCode(i);
-                       // FunctionIR callingFunction = programIR.getFunctionByName(callingFunctionName);
+                        // FunctionIR callingFunction = programIR.getFunctionByName(callingFunctionName);
                         List<BackendVariable> arguments = getFunctionSignature(callingFunctionName, programIR);
                         i += 1;
                         int stackVarIdx = 0;
@@ -358,10 +464,10 @@ public class MIPSGenerator {
                                 stackVarIdx += 1;
                             }
                         }
-                        writer.write(String.format("addiu $sp, $sp, %d\n", -WORD_SIZE*stackVarIdx));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", -WORD_SIZE * stackVarIdx));
 
                         argRegisterAllocator = new ArgumentRegisterAllocator();
-                        stackVarIdx=0;
+                        stackVarIdx = 0;
 
                         for (int argIdx = 0; argIdx < arguments.size(); argIdx++) {
                             // we can reset temp allocation on each copy
@@ -394,7 +500,7 @@ public class MIPSGenerator {
                         }
                         // CHEATING ;)
                         writer.write(String.format("jal %s\n", "_fun_" + callingFunctionName));
-                        writer.write(String.format("addiu $sp, $sp, %d\n", WORD_SIZE*stackVarIdx));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", WORD_SIZE * stackVarIdx));
 
                         if (instr.getIthCode(0).equals("callr")) {
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
@@ -502,13 +608,13 @@ public class MIPSGenerator {
         String bName = instr.getIthCode(2);
         String label = instr.getIthCode(3);
         BaseType type = null;
-        if(functionIR.fetchVariableByName(aName) != null){
+        if (functionIR.fetchVariableByName(aName) != null) {
             type = functionIR.fetchVariableByName(aName).typeStructure.base;
         }
-        if(functionIR.fetchVariableByName(bName) != null){
+        if (functionIR.fetchVariableByName(bName) != null) {
             type = functionIR.fetchVariableByName(bName).typeStructure.base;
         }
-        if(type == null){
+        if (type == null) {
             try {
                 Integer.parseInt(aName);
                 type = BaseType.INT;
@@ -537,7 +643,7 @@ public class MIPSGenerator {
         String aName;
 
 
-        if(Objects.equals(instr.getIthCode(0), "array_store")) {
+        if (Objects.equals(instr.getIthCode(0), "array_store")) {
             arrName = instr.getIthCode(1);
             iName = instr.getIthCode(2);
             aName = instr.getIthCode(3);

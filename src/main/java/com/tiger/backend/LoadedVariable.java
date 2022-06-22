@@ -29,12 +29,12 @@ public class LoadedVariable {
 
     private void initWithBacking(BackendVariable backing, TemporaryRegisterAllocator tempAllocator, BaseType type) {
         this.backing = backing;
-        assert backing.allocated;
+        //assert backing.allocated;
         assert !backing.typeStructure.isArray();
         if (backing.isStatic) {
             this.loadedRegister = tempAllocator.popTempOfType(type);
             this.backingType = BackingType.STATIC;
-        } else if (backing.isSpilled) {
+        } else if (backing.isSpilled || !backing.allocated) {
             this.loadedRegister = tempAllocator.popTempOfType(type);
             this.backingType = BackingType.STACK;
         } else {

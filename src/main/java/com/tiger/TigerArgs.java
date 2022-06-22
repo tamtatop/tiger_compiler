@@ -1,10 +1,6 @@
 package com.tiger;
 
-enum RegisterAllocation {
-    NAIVE,
-    INTRABLOCK,
-    BRIGGS
-}
+import com.tiger.backend.allocationalgorithm.RegisterAllocationAlgorithm;
 
 class TigerArgs {
     public String mipsDefaultFilename;
@@ -13,7 +9,7 @@ class TigerArgs {
     public String parserFilename;
     public String symbolTableFilename;
     public String irFilename;
-    public RegisterAllocation allocationStrategy;
+    public RegisterAllocationAlgorithm allocationStrategy;
     public String livenessFilename;
     public String cfgFilename;
     public String mipsFilename;
@@ -27,7 +23,7 @@ class TigerArgs {
         boolean irOut = false;
         boolean cfgOut = false;
         boolean livenessOut = false;
-        RegisterAllocation allocation = null;
+        RegisterAllocationAlgorithm allocation = null;
 
 
         while (i < args.length && args[i].startsWith("-")) {
@@ -49,11 +45,11 @@ class TigerArgs {
                 case "--liveness" ->  // parse tree output
                         livenessOut = true;
                 case "-n" ->
-                        allocation = RegisterAllocation.NAIVE;
+                        allocation = RegisterAllocationAlgorithm.NAIVE;
                 case "-b" ->
-                        allocation = RegisterAllocation.INTRABLOCK;
+                        allocation = RegisterAllocationAlgorithm.INTRABLOCK;
                 case "-g" ->
-                        allocation = RegisterAllocation.BRIGGS;
+                        allocation = RegisterAllocationAlgorithm.BRIGGS;
                 case "--mips" ->
                         mipsOut = true;
             }
@@ -86,7 +82,7 @@ class TigerArgs {
         if(mipsOut) {
             if (allocation == null) {
                 // default allocation strategy
-                allocation = RegisterAllocation.NAIVE;
+                allocation = RegisterAllocationAlgorithm.NAIVE;
             }
             switch (allocation) {
                 case NAIVE -> {

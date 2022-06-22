@@ -3,7 +3,6 @@ package com.tiger;
 import com.tiger.antlr.TigerLexer;
 import com.tiger.antlr.TigerParser;
 import com.tiger.backend.CompilerBackend;
-import com.tiger.backend.LoadedVariable;
 import com.tiger.io.CancellableWriter;
 import com.tiger.io.IOUtils;
 import com.tiger.ir.ProgramIRBuilder;
@@ -98,7 +97,7 @@ public class Main {
         ProgramIR finalIr = listener.getProgramIR();
         System.out.println("program name: " + finalIr.getProgramName());
 
-        CompilerBackend.runBackend(finalIr, cfgWriter, livenessWriter, mipsWriter);
+        CompilerBackend.runBackend(finalIr, cfgWriter, livenessWriter, mipsWriter, tigerArgs.allocationStrategy);
         cfgWriter.commit();
         livenessWriter.commit();
         mipsWriter.commit();

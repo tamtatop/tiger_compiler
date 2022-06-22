@@ -4,14 +4,11 @@ import com.tiger.backend.BackendVariable;
 import com.tiger.ir.interfaces.FunctionIR;
 import com.tiger.ir.interfaces.ProgramIR;
 
-public class NaiveRegisterAllocator implements RegisterAllocator {
+public class NaiveRegisterAllocator {
 
-    @Override
-    public void runAllocationAlgorithm(ProgramIR ir) {
-        for (FunctionIR functionIR : ir.getFunctions()) {
-            for (BackendVariable localVariable : functionIR.getLocalVariables()) {
-                localVariable.spill();
-            }
+    public static void runAllocationAlgorithm(FunctionIR function) {
+        for (BackendVariable localVariable : function.getLocalVariables()) {
+            localVariable.spill();
         }
     }
 }
