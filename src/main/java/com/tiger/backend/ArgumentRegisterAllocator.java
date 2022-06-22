@@ -5,8 +5,8 @@ import com.tiger.types.BaseType;
 import java.util.Stack;
 
 public class ArgumentRegisterAllocator {
-    private final static String[] INT_ARGS = {"a0", "a1", "a2", "a3"};
-    private final static String[] FLOAT_ARGS = {"f12", "f14"};
+    private final static String[] INT_ARGS = {"$a3", "$a2", "$a1", "$a0"};
+    private final static String[] FLOAT_ARGS = {"$f14", "$f12"};
 
     private final Stack<String> intArgs = new Stack<>();
     private final Stack<String> floatArgs = new Stack<>();

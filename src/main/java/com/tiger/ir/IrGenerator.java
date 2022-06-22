@@ -113,7 +113,7 @@ public class IrGenerator {
     }
 
     public void emitIfCondition(NakedVariable variable, String elseLabel) {
-        funcIr.write(String.format("brneq, %s, 0, %s\n", mangledName(variable), elseLabel));
+        funcIr.write(String.format("breq, %s, 0, %s\n", mangledName(variable), elseLabel));
     }
 
     public void emitForCondition(NakedVariable variable1, NakedVariable variable2, String afterForLabel) {

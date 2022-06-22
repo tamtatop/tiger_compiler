@@ -72,18 +72,18 @@ public class MIPSGenerator {
         }
         writer.write("""
 
-                printi:
+                _fun_printi:
                 li $v0, 1
                 syscall
                 jr $ra
 
-                printf:
+                _fun_printf:
                 li $v0, 2
                 syscall
                 jr $ra
 
 
-                not:
+                _fun_not:
                 beq $a0, $zero, not0
                 not1:
                 move $v0, $zero
@@ -93,7 +93,7 @@ public class MIPSGenerator {
                 jr $ra
 
 
-                exit:
+                _fun_exit:
                 li $v0, 17
                 syscall
                 jr $ra
@@ -151,8 +151,9 @@ public class MIPSGenerator {
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR) {
         if (functionIR.getFunctionName().equals("main")) {
             writer.write(".globl main\n");
+            writer.write("main" + ":\n");
         }
-        writer.write(functionIR.getFunctionName() + ":\n");
+        writer.write("_fun_" + functionIR.getFunctionName() + ":\n");
 
         // space to store old fp
         writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
@@ -187,7 +188,7 @@ public class MIPSGenerator {
         writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
 
         // actually save regs and ra
-        handleSaveRegData(saveRegOffset, "sw", "s.s");
+        //handleSaveRegData(saveRegOffset, "sw", "s.s");
         writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
 
         // ARGUMENT HANDLING:
@@ -218,6 +219,7 @@ public class MIPSGenerator {
                     };
                     writer.write(String.format("%s %s, %s\n", moveInstr, target.getRegister(), sourceReg));
                 }
+                writer.write(target.flushAssembly());
             }
         }
 
@@ -295,6 +297,7 @@ public class MIPSGenerator {
                         String returnVarName = instr.getIthCode(1);
                         if (returnVarName != null) {
                             LoadedVariable retVar = new LoadedVariable(returnVarName, functionIR, new TemporaryRegisterAllocator(), functionIR.getReturnType());
+                            writer.write(retVar.loadAssembly());
                             String retVarRegister = retVar.getRegister();
                             if (functionIR.getReturnType() == BaseType.INT) {
                                 writer.write(String.format("move, $v0, %s\n", retVarRegister));
@@ -302,14 +305,14 @@ public class MIPSGenerator {
                                 writer.write(String.format("move, $f0, %s\n", retVarRegister));
                             }
                         }
-                        handleSaveRegData(saveRegOffset, "lw", "l.s");
+                        //handleSaveRegData(saveRegOffset, "lw", "l.s");
                         writer.write(String.format("lw $ra, %d($fp)\n", -spOffset));
                         writer.write(String.format("addiu $sp, $sp, %d\n", spOffset));
 
                         // restore old fp
                         writer.write("lw $fp, 0($sp)\n");
                         // remove space allocated for storing old fp
-                        writer.write(String.format("addiu $sp, $sp, -%d\n", WORD_SIZE));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", WORD_SIZE));
 
                         writer.write("jr $ra\n");
 
@@ -335,6 +338,7 @@ public class MIPSGenerator {
                             String argName = instr.getIthCode(i + argIdx);
                             BaseType argType = arguments.get(argIdx).typeStructure.base;
                             LoadedVariable arg = new LoadedVariable(argName, functionIR, tempRegisterAllocator, argType);
+                            writer.write(arg.loadAssembly());
                             String argRegister = argRegisterAllocator.popArgOfType(argType);
 
                             String asmInstr = "";
@@ -351,12 +355,13 @@ public class MIPSGenerator {
                             }
                             if (argRegister == null) {
                                 stackVarIdx += 1;
-                                writer.write(String.format("%s $%s, %d($fp)\n", storeInstr, arg.getRegister(), -spOffset - stackVarIdx * 4));
+                                writer.write(String.format("%s %s, %d($fp)\n", storeInstr, arg.getRegister(), -spOffset - stackVarIdx * 4));
                             } else {
-                                writer.write(String.format("%s $%s, $%s\n", asmInstr, argRegister, arg.getRegister()));
+                                writer.write(String.format("%s %s, %s\n", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
-                        writer.write(String.format("jal %s:\n", callingFunctionName));
+                        // TODO: allocate space for args
+                        writer.write(String.format("jal %s\n", "_fun_" + callingFunctionName));
 
                         if (instr.getIthCode(0).equals("callr")) {
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
@@ -397,7 +402,6 @@ public class MIPSGenerator {
     }
 
     private void translateBinaryOperation(String binop, IRInstruction instr, FunctionIR functionIR) {
-        writer.write("move $fp, $sp\n");
 
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
         String aName = instr.getIthCode(1);
@@ -486,6 +490,7 @@ public class MIPSGenerator {
         BackendVariable arr = functionIR.fetchVariableByName(arrName);
         String iName = instr.getIthCode(2);
         LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
+        writer.write(i.loadAssembly());
 
         // TODO: possibly optimize to work with one less register
 

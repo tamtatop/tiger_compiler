@@ -6,8 +6,8 @@ import java.util.Stack;
 
 public class TemporaryRegisterAllocator {
 
-    private final static String[] INT_TEMPS = {"t0", "t1", "t2", "t3"};
-    private final static String[] FLOAT_TEMPS = {"f4", "f5", "f6", "f7"};
+    private final static String[] INT_TEMPS = {"$t0", "$t1", "$t2", "$t3"};
+    private final static String[] FLOAT_TEMPS = {"$f4", "$f5", "$f6", "$f7"};
     private final Stack<String> intTemps = new Stack<>();
     private final Stack<String> floatTemps = new Stack<>();
 
