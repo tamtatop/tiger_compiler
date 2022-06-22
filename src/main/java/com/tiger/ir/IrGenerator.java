@@ -117,8 +117,9 @@ public class IrGenerator {
     }
 
     public void emitForCondition(NakedVariable variable1, NakedVariable variable2, String afterForLabel) {
-        funcIr.write(String.format("brgeq, %s, %s, %s\n", mangledName(variable1), mangledName(variable2), afterForLabel));
+        funcIr.write(String.format("brgt, %s, %s, %s\n", mangledName(variable1), mangledName(variable2), afterForLabel));
     }
+
 
     private static final HashMap<String, String> opToIrOp = new HashMap<>();
     private static final HashMap<String, String> cmpOp = new HashMap<>();
@@ -177,7 +178,7 @@ public class IrGenerator {
         emitAssignImmediate(i, 0);
         emitAssignImmediate(target, 1);
         emitLabel(powLabel);
-        emitForCondition(i, right, afterPow);
+        funcIr.write(String.format("brgeq, %s, %s, %s\n", mangledName(i), mangledName(right), afterPow));
         emitBinaryOp(target, left, target, "*");
         emitVariableIncrement(i);
         emitGoto(powLabel);

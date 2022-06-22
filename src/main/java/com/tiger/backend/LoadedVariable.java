@@ -70,10 +70,10 @@ public class LoadedVariable {
                 case STATIC -> String.format("lw %s, %s\n", this.loadedRegister, this.backing.staticName());
             };
             case FLOAT -> switch (this.backingType) {
-                case CONST -> String.format("li.s %s, %s\n", this.loadedRegister, this.constval);
+                case CONST -> String.format("li.s %s, %f\n", this.loadedRegister, Float.parseFloat(this.constval));
                 case REG -> switch (backing.typeStructure.base) {
                     case FLOAT ->
-                            String.format("move %s, %s\n", this.loadedRegister, this.backing.getAssignedRegister());
+                            String.format("mov.s %s, %s\n", this.loadedRegister, this.backing.getAssignedRegister());
                     case INT ->
                             String.format("mtc1 %s, %s\ncvt.s.w %s, %s\n", this.loadedRegister, this.backing.getAssignedRegister(), this.loadedRegister, this.loadedRegister);
                 }
@@ -111,7 +111,7 @@ public class LoadedVariable {
                 case CONST -> throw new RuntimeException("can't flush to const");
                 case REG -> {
                     assert backing.typeStructure.base == BaseType.FLOAT;
-                    yield String.format("move %s, %s\n", this.backing.getAssignedRegister(), this.loadedRegister);
+                    yield String.format("mov.s %s, %s\n", this.backing.getAssignedRegister(), this.loadedRegister);
                 }
                 case STACK -> {
                     assert backing.typeStructure.base == BaseType.FLOAT;

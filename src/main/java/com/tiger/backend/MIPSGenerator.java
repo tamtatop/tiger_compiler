@@ -31,9 +31,19 @@ public class MIPSGenerator {
     private final CancellableWriter writer;
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
-    private static final HashMap<String, String> asmFloatBranchOp = new HashMap<>();
+    private static final HashMap<String, FloatBranchOps> asmFloatBranchOp = new HashMap<>();
     private static final ArrayList<String> intSaveRegs = new ArrayList<>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
     private static final ArrayList<String> floatSaveRegs = new ArrayList<>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
+
+    private static class FloatBranchOps {
+        String compareAndSetFlagOp;
+        String branchOp;
+
+        public FloatBranchOps(String compareAndSetFlagOp, String branchOp) {
+            this.compareAndSetFlagOp = compareAndSetFlagOp;
+            this.branchOp = branchOp;
+        }
+    }
 
     static {
         asmBinaryOp.put("add", "add");
@@ -50,12 +60,12 @@ public class MIPSGenerator {
         asmIntBranchOp.put("brleq", "ble");
         asmIntBranchOp.put("brgeq", "bge");
 
-        asmFloatBranchOp.put("breq", "c.eq.s");
-        asmFloatBranchOp.put("brneq", "c.ne.s");
-        asmFloatBranchOp.put("brlt", "c.lt.s");
-        asmFloatBranchOp.put("brgt", "c.gt.s");
-        asmFloatBranchOp.put("brleq", "c.le.s");
-        asmFloatBranchOp.put("brgeq", "c.ge.s");
+        asmFloatBranchOp.put("breq", new FloatBranchOps("c.eq.s", "bc1t"));
+        asmFloatBranchOp.put("brneq", new FloatBranchOps("c.eq.s", "bc1f"));
+        asmFloatBranchOp.put("brlt", new FloatBranchOps("c.lt.s", "bc1t"));
+        asmFloatBranchOp.put("brgt", new FloatBranchOps("c.le.s", "bc1f"));
+        asmFloatBranchOp.put("brleq", new FloatBranchOps("c.le.s", "bc1t"));
+        asmFloatBranchOp.put("brgeq", new FloatBranchOps("c.lt.s", "bc1f"));
 
     }
 
@@ -75,10 +85,16 @@ public class MIPSGenerator {
                 _fun_printi:
                 li $v0, 1
                 syscall
+                li $v0, 11
+                li $a0, 10
+                syscall
                 jr $ra
 
                 _fun_printf:
                 li $v0, 2
+                syscall
+                li $v0, 11
+                li $a0, 10
                 syscall
                 jr $ra
 
@@ -163,8 +179,8 @@ public class MIPSGenerator {
         // ======================== STACK LAYOUT ====================================================
         //         sp                                     fp
         //         V                                       V
-        //         |          stack frame                  | old fp | ra  | stackarg0 | stackarg1 ...
-        //  sizes: |           spOffset                    |   4    |  4  |     4     |   4       ...
+        //         |          stack frame                  | old fp | stackarg0 | stackarg1 ...
+        //  sizes: |           spOffset                    |   4    |     4     |   4       ...
         //         | saved ra | saved regs | spilled vars  |
         // ==========================================================================================
 
@@ -209,7 +225,7 @@ public class MIPSGenerator {
                         case INT -> "lw";
                         case FLOAT -> "l.s";
                     };
-                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), 2 * WORD_SIZE + WORD_SIZE * stackArgCounter));
+                    writer.write(String.format("%s %s, %d($fp)\n", loadInstr, target.getRegister(), WORD_SIZE + WORD_SIZE * stackArgCounter));
                     stackArgCounter += 1;
                 } else {
                     // arg is in sourceReg
@@ -242,8 +258,11 @@ public class MIPSGenerator {
                             LoadedVariable bLoaded = new LoadedVariable(bName, functionIR, tempRegisterAllocator, a.typeStructure.base);
                             String bRegister = bLoaded.getRegister();
                             writer.write(bLoaded.loadAssembly());
-
-                            writer.write(String.format("move %s, %s\n", aRegister, bRegister));
+                            String moveInstruction = switch (a.typeStructure.base) {
+                                case INT -> "move";
+                                case FLOAT -> "mov.s";
+                            };
+                            writer.write(String.format("%s %s, %s\n", moveInstruction, aRegister, bRegister));
                             writer.write(aLoaded.flushAssembly());
                         } else if (cName != null) {
                             // assign, X, 100, 10
@@ -280,8 +299,8 @@ public class MIPSGenerator {
                             String copyRegister = tempRegisterAllocator.popInt();
 
                             for (int i = 0; i < a.typeStructure.arraySize; i++) {
-                                writer.write(String.format("%s %s, %d(%s)", loadInstruction, copyRegister, WORD_SIZE * i, XRegister));
-                                writer.write(String.format("%s %s, %d(%s)", storeInstruction, copyRegister, WORD_SIZE * i, YRegister));
+                                writer.write(String.format("%s %s, %d(%s)\n", loadInstruction, copyRegister, WORD_SIZE * i, YRegister));
+                                writer.write(String.format("%s %s, %d(%s)\n", storeInstruction, copyRegister, WORD_SIZE * i, XRegister));
                             }
                         }
                     }
@@ -302,7 +321,7 @@ public class MIPSGenerator {
                             if (functionIR.getReturnType() == BaseType.INT) {
                                 writer.write(String.format("move, $v0, %s\n", retVarRegister));
                             } else {
-                                writer.write(String.format("move, $f0, %s\n", retVarRegister));
+                                writer.write(String.format("mov.s, $f0, %s\n", retVarRegister));
                             }
                         }
                         //handleSaveRegData(saveRegOffset, "lw", "l.s");
@@ -331,6 +350,19 @@ public class MIPSGenerator {
                         i += 1;
                         int stackVarIdx = 0;
                         assert instr.size() == i + arguments.size();
+
+                        for (BackendVariable argument : arguments) {
+                            BaseType argType = argument.typeStructure.base;
+                            String argRegister = argRegisterAllocator.popArgOfType(argType);
+                            if (argRegister == null) {
+                                stackVarIdx += 1;
+                            }
+                        }
+                        writer.write(String.format("addiu $sp, $sp, %d\n", -WORD_SIZE*stackVarIdx));
+
+                        argRegisterAllocator = new ArgumentRegisterAllocator();
+                        stackVarIdx=0;
+
                         for (int argIdx = 0; argIdx < arguments.size(); argIdx++) {
                             // we can reset temp allocation on each copy
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
@@ -360,8 +392,9 @@ public class MIPSGenerator {
                                 writer.write(String.format("%s %s, %s\n", asmInstr, argRegister, arg.getRegister()));
                             }
                         }
-                        // TODO: allocate space for args
+                        // CHEATING ;)
                         writer.write(String.format("jal %s\n", "_fun_" + callingFunctionName));
+                        writer.write(String.format("addiu $sp, $sp, %d\n", WORD_SIZE*stackVarIdx));
 
                         if (instr.getIthCode(0).equals("callr")) {
                             TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
@@ -369,16 +402,20 @@ public class MIPSGenerator {
                             BaseType flushVarType = functionIR.fetchVariableByName(flushVarName).typeStructure.base;
                             LoadedVariable flushVar = new LoadedVariable(flushVarName, functionIR, tempRegisterAllocator, flushVarType);
                             String returnedValueRegister = "";
+                            String moveInstruction;
                             if (flushVarType == BaseType.INT) {
                                 returnedValueRegister = "$v0";
+                                moveInstruction = "move";
                             } else {
                                 returnedValueRegister = "$f0";
+                                moveInstruction = "mov.s";
                             }
                             if (getReturnType(callingFunctionName, programIR) == BaseType.INT && flushVarType == BaseType.FLOAT) {
                                 writer.write("mtc1 $v0, $f0\n");
                                 writer.write("cvt.s.w $f0, $f0\n");
                             }
-                            writer.write(String.format("move %s, %s\n", flushVar.getRegister(), returnedValueRegister));
+
+                            writer.write(String.format("%s %s, %s\n", moveInstruction, flushVar.getRegister(), returnedValueRegister));
                             writer.write(flushVar.flushAssembly());
                         }
 
@@ -386,11 +423,20 @@ public class MIPSGenerator {
                     case ARRAYSTORE -> {
                         ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
                         writer.write(arrData.a.loadAssembly());
-                        writer.write(String.format("sw %s, 0(%s)\n", arrData.a.getRegister(), arrData.arrAddressRegister));
+                        String storeInstruction = switch (arrData.a.type) {
+                            case INT -> "sw";
+                            case FLOAT -> "s.s";
+                        };
+                        writer.write(String.format("%s %s, 0(%s)\n", storeInstruction, arrData.a.getRegister(), arrData.arrAddressRegister));
                     }
                     case ARRAYLOAD -> {
                         ArrStoreLoadData arrData = getDataForArrayStoreLoadTranslation(instr, functionIR);
-                        writer.write(String.format("lw %s, 0(%s)\n", arrData.a.getRegister(), arrData.arrAddressRegister));
+
+                        String loadInstruction = switch (arrData.a.type) {
+                            case INT -> "lw";
+                            case FLOAT -> "l.s";
+                        };
+                        writer.write(String.format("%s %s, 0(%s)\n", loadInstruction, arrData.a.getRegister(), arrData.arrAddressRegister));
                         writer.write(arrData.a.flushAssembly());
                     }
                 }
@@ -478,8 +524,9 @@ public class MIPSGenerator {
         if (type == BaseType.INT) {
             writer.write(String.format("%s %s, %s, %s\n", asmIntBranchOp.get(irBranchOp), a.getRegister(), b.getRegister(), label));
         } else {
-            writer.write(String.format("%s %s, %s\n", asmFloatBranchOp.get(irBranchOp), a.getRegister(), b.getRegister()));
-            writer.write(String.format("bc1t %s\n", label));
+            FloatBranchOps floatBranchOps = asmFloatBranchOp.get(irBranchOp);
+            writer.write(String.format("%s %s, %s\n", floatBranchOps.compareAndSetFlagOp, a.getRegister(), b.getRegister()));
+            writer.write(String.format("%s %s\n", floatBranchOps.branchOp, label));
         }
     }
 

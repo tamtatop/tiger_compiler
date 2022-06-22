@@ -335,7 +335,7 @@ public class CompilerFront {
                 if (!from_result.typeStructure.isBaseInt() || !to_result.typeStructure.isBaseInt()) {
                     errorLogger.log(new SemanticException("'for' must have int types in range", ctx.expr(0).start));
                 } else {
-                    ir.emitForCondition(from_result, to_result, afterFor);
+                    ir.emitForCondition(i, to_result, afterFor);
                 }
             }
 

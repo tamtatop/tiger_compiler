@@ -7,6 +7,7 @@ enum RegisterAllocation {
 }
 
 class TigerArgs {
+    public String mipsDefaultFilename;
     public String inputFilename;
     public String lexerFilename;
     public String parserFilename;
@@ -98,6 +99,7 @@ class TigerArgs {
                     this.mipsFilename = baseFilename + ".briggs.s";
                 }
             }
+            this.mipsDefaultFilename = baseFilename + ".s";
         }
         this.allocationStrategy = allocation;
         System.out.println("input fname:" + this.inputFilename);

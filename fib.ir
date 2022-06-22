@@ -1,0 +1,41 @@
+start_program function_call_8_arg
+	static-int-list:
+	static-float-list: 
+
+start_function sum
+	int sum(int _1_a, int _1_b, int _1_c, int _1_d, int _1_e, int _1_f, int _1_g, int _1_h)
+	int-list: _1_a, _1_b, _1_c, _1_d, _1_e, _1_f, _1_g, _1_h, _1_tmp_5, _1_tmp_4, _1_tmp_6, _1_tmp_1, _1_tmp_0, _1_tmp_3, _1_tmp_2
+	float-list: 
+	sum:
+	add, _1_a, _1_b, _1_tmp_0
+	add, _1_tmp_0, _1_c, _1_tmp_1
+	add, _1_tmp_1, _1_d, _1_tmp_2
+	add, _1_tmp_2, _1_e, _1_tmp_3
+	add, _1_tmp_3, _1_f, _1_tmp_4
+	add, _1_tmp_4, _1_g, _1_tmp_5
+	add, _1_tmp_5, _1_h, _1_tmp_6
+	return, _1_tmp_6, ,
+	return , , ,
+	end_function sum
+
+start_function main
+	int main()
+	int-list: _3_result, _3_tmp_8, _3_tmp_5, _3_tmp_4, _3_tmp_7, _3_tmp_6, _3_tmp_1, _3_tmp_0, _3_tmp_3, _3_tmp_2, _2_tmp_9
+	float-list: 
+	main:
+	assign, _3_tmp_0, 1,
+	assign, _3_tmp_1, 2,
+	assign, _3_tmp_2, 3,
+	assign, _3_tmp_3, 4,
+	assign, _3_tmp_4, 5,
+	assign, _3_tmp_5, 6,
+	assign, _3_tmp_6, 7,
+	assign, _3_tmp_7, 8,
+	callr, _3_tmp_8, sum, _3_tmp_0, _3_tmp_1, _3_tmp_2, _3_tmp_3, _3_tmp_4, _3_tmp_5, _3_tmp_6, _3_tmp_7
+	assign, _3_result, _3_tmp_8,
+	call, printi, _3_result
+	assign, _2_tmp_9, 0,
+	return, _2_tmp_9, ,
+	return , , ,
+	end_function main
+

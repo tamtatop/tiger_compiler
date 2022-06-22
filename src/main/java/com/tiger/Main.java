@@ -15,6 +15,11 @@ import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 
@@ -46,7 +51,7 @@ public class Main {
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         TigerArgs tigerArgs = new TigerArgs(args);
 
 
@@ -97,6 +102,10 @@ public class Main {
         cfgWriter.commit();
         livenessWriter.commit();
         mipsWriter.commit();
+
+        Path copied = Paths.get(tigerArgs.mipsDefaultFilename);
+        Path originalPath = Paths.get(tigerArgs.mipsFilename);
+        Files.copy(originalPath, copied, StandardCopyOption.REPLACE_EXISTING);
     }
 
 
