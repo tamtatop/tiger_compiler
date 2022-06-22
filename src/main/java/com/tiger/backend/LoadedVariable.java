@@ -38,13 +38,12 @@ public class LoadedVariable {
             this.loadedRegister = tempAllocator.popTempOfType(type);
             this.backingType = BackingType.STACK;
         } else {
-            // TODO: don't use extra register when possible
             this.loadedRegister = tempAllocator.popTempOfType(type);
             this.backingType = BackingType.REG;
         }
     }
 
-    // TODO: consider should user of loaded variable expect that variable does not change unless flush is called?!
+    /// Loaded variable gives a guarantee that without flush variable won't be modified.
     public LoadedVariable(String s, FunctionIR f, TemporaryRegisterAllocator tempAllocator, BaseType type) {
         this.type = type;
         if (isNumeric(s)) {
