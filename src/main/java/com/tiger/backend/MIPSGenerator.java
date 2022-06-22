@@ -282,7 +282,16 @@ public class MIPSGenerator {
         copyArgumentValues(functionIR);
 
         for (IRBlock block : blocks) {
+            List<BackendVariable> promotedVars = IntraBlockAllocator.allocateVariablesInBlock(functionIR, block.entries);
+            for (BackendVariable promotedVar : promotedVars) {
+                LoadedVariable loader = new LoadedVariable(promotedVar, promotedVar.getAssignedRegister(), promotedVar.typeStructure.base);
+                writer.write(loader.loadAssembly());
+            }
             translateInstructions(functionIR, programIR, block.entries, spOffset, saveRegOffset);
+            for (BackendVariable promotedVar : promotedVars) {
+                LoadedVariable loader = new LoadedVariable(promotedVar, promotedVar.getAssignedRegister(), promotedVar.typeStructure.base);
+                writer.write(loader.flushAssembly());
+            }
         }
     }
 
@@ -327,7 +336,7 @@ public class MIPSGenerator {
                 translateFunctionNaive(functionIR, programIR);
             }
             case INTRABLOCK -> {
-                //     translateFunctionIntraBlock(functionIR, programIR);
+                translateFunctionIntraBlock(functionIR, programIR);
             }
             case BRIGGS -> {
                 //   translateFunctionBriggs(functionIR, programIR);
