@@ -65,10 +65,10 @@ public class IrGenerator {
 
 
     private void generateVariableLists(String prefix, List<NakedVariable> variables) {
-        writer.write("\t"+prefix + "int-list:");
+        writer.write("\t" + prefix + "int-list:");
         writer.write(generateSpecificTypeVariablesNames(variables, BaseType.INT));
         writer.write("\n");
-        writer.write("\t"+prefix + "float-list: ");
+        writer.write("\t" + prefix + "float-list: ");
         writer.write(generateSpecificTypeVariablesNames(variables, BaseType.FLOAT));
         writer.write("\n");
     }
@@ -77,7 +77,7 @@ public class IrGenerator {
         writer.write(String.format("start_program %s\n", programName));
         generateVariableLists("static-", variables);
         writer.write("\n");
-        if(listener!=null){
+        if (listener != null) {
             listener.genProgram(programName, variables);
         }
     }
@@ -93,7 +93,7 @@ public class IrGenerator {
 
     // Word immediate means same as numeric constant
     public void emitAssignImmediate(NakedVariable target, Integer imm) {
-        if(target.typeStructure.isArray()) {
+        if (target.typeStructure.isArray()) {
             Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d, %d\n", mangledName(target), target.typeStructure.arraySize, imm));
         } else {
             Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d,\n", mangledName(target), imm));
@@ -101,7 +101,7 @@ public class IrGenerator {
     }
 
     public void emitAssignImmediate(NakedVariable target, Float imm) {
-        if(target.typeStructure.isArray()) {
+        if (target.typeStructure.isArray()) {
             Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %d, %f\n", mangledName(target), target.typeStructure.arraySize, imm));
         } else {
             Objects.requireNonNullElse(funcIr, staticIr).write(String.format("assign, %s, %f,\n", mangledName(target), imm));
@@ -185,9 +185,8 @@ public class IrGenerator {
     }
 
 
-
-        // i = i+1
-    public void emitVariableIncrement(NakedVariable var){
+    // i = i+1
+    public void emitVariableIncrement(NakedVariable var) {
         funcIr.write(String.format("add, %s, 1, %s\n", mangledName(var), mangledName(var)));
     }
 
@@ -236,7 +235,7 @@ public class IrGenerator {
 
         String retType;
         StringBuilder fullIrBody = new StringBuilder();
-        if(curFunction.returnType == null){
+        if (curFunction.returnType == null) {
             retType = "void";
         } else {
             retType = curFunction.returnType.format();
@@ -247,7 +246,7 @@ public class IrGenerator {
         writer.write(String.format("\t%s:\n", curFunction.name));
 
         writer.write("\t");
-        if(curFunction.name.equals("main")){
+        if (curFunction.name.equals("main")) {
             writer.write(staticIr.toString().replace("\n", "\n\t"));
             fullIrBody.append(staticIr.toString().replace("\n", "\n\t"));
         }
@@ -257,18 +256,20 @@ public class IrGenerator {
 
 
         writer.write(String.format("end_function %s\n\n", curFunction.name));
-        if(listener!=null){
-            listener.genFunction(curFunction.name, funcVariables, funcParams, fullIrBody.toString(), curFunction.returnType.typeStructure().base);
+        if (listener != null) {
+            listener.genFunction(curFunction.name, funcVariables, funcParams, fullIrBody.toString(),
+                    (curFunction.returnType != null) ? curFunction.returnType.typeStructure().base : null);
         }
     }
 
     public void emitReturn(NakedVariable retVal) {
-        if(retVal == null){
+        if (retVal == null) {
             funcIr.write("return , , ,\n");
         } else {
             funcIr.write(String.format("return, %s, ,\n", mangledName(retVal)));
         }
     }
+
     private String callArgs(ArrayList<NakedVariable> args) {
         StringBuilder argsir = new StringBuilder();
         for (NakedVariable arg : args) {
@@ -282,8 +283,9 @@ public class IrGenerator {
     }
 
     public void emitCall(FunctionSymbol func, ArrayList<NakedVariable> args) {
-        funcIr.write(String.format("call, %s, %s\n",  func.name, callArgs(args)));
+        funcIr.write(String.format("call, %s, %s\n", func.name, callArgs(args)));
     }
+
     public void emitCallR(FunctionSymbol func, ArrayList<NakedVariable> args, NakedVariable target) {
         funcIr.write(String.format("callr, %s, %s, %s\n", mangledName(target), func.name, callArgs(args)));
     }
