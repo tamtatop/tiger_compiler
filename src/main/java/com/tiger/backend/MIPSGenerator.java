@@ -485,10 +485,22 @@ public class MIPSGenerator {
 
     private ArrStoreLoadData getDataForArrayStoreLoadTranslation(IRInstruction instr, FunctionIR functionIR) {
         TemporaryRegisterAllocator tempRegisterAllocator = new TemporaryRegisterAllocator();
+        String arrName;
+        String iName;
+        String aName;
 
-        String arrName = instr.getIthCode(1);
+
+        if(Objects.equals(instr.getIthCode(0), "array_store")) {
+            arrName = instr.getIthCode(1);
+            iName = instr.getIthCode(2);
+            aName = instr.getIthCode(3);
+        } else {
+            arrName = instr.getIthCode(2);
+            iName = instr.getIthCode(3);
+            aName = instr.getIthCode(1);
+        }
+
         BackendVariable arr = functionIR.fetchVariableByName(arrName);
-        String iName = instr.getIthCode(2);
         LoadedVariable i = new LoadedVariable(iName, functionIR, tempRegisterAllocator, BaseType.INT);
         writer.write(i.loadAssembly());
 
@@ -498,7 +510,6 @@ public class MIPSGenerator {
         String arrayBeginningRegister = loadArrayBeginning(tempRegisterAllocator, arr);
         writer.write(String.format("add %s, %s, %s\n", i.getRegister(), i.getRegister(), arrayBeginningRegister));
 
-        String aName = instr.getIthCode(3);
         LoadedVariable a = new LoadedVariable(aName, functionIR, tempRegisterAllocator, arr.typeStructure.base);
 
         return new ArrStoreLoadData(a, i.getRegister());
