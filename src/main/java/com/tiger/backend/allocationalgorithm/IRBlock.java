@@ -8,7 +8,7 @@ import java.util.List;
 public class IRBlock {
     public int blockIdx;
     public List<IRentry> entries;
-    public ArrayList<Integer> neighbours;
+    public ArrayList<IRBlock> neighbours;
 
     public IRBlock(int blockIdx, List<IRentry> entries) {
         this.blockIdx = blockIdx;
