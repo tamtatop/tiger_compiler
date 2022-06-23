@@ -1,9 +1,6 @@
 package com.tiger.backend;
 
-import com.tiger.backend.allocationalgorithm.IRBlock;
-import com.tiger.backend.allocationalgorithm.IntraBlockAllocator;
-import com.tiger.backend.allocationalgorithm.NaiveRegisterAllocator;
-import com.tiger.backend.allocationalgorithm.RegisterAllocationAlgorithm;
+import com.tiger.backend.allocationalgorithm.*;
 import com.tiger.io.CancellableWriter;
 import com.tiger.ir.interfaces.*;
 import com.tiger.types.BaseType;
@@ -32,6 +29,7 @@ class ArrStoreLoadData {
 
 public class MIPSGenerator {
     private final CancellableWriter writer;
+    private final CancellableWriter cfgWriter;
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
     private static final HashMap<String, FloatBranchOps> asmFloatBranchOp = new HashMap<>();
@@ -70,8 +68,9 @@ public class MIPSGenerator {
 
     }
 
-    public MIPSGenerator(CancellableWriter writer) {
+    public MIPSGenerator(CancellableWriter writer, CancellableWriter cfgWriter) {
         this.writer = writer;
+        this.cfgWriter = cfgWriter;
     }
 
     public void translateProgram(ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
@@ -254,6 +253,8 @@ public class MIPSGenerator {
 
     public void translateFunctionIntraBlock(FunctionIR functionIR, ProgramIR programIR) {
         List<IRBlock> blocks = IntraBlockAllocator.findBlocks(functionIR);
+
+        CfgGraphVizGenerator.generateCfgGraphViz(cfgWriter, blocks);
 
         generateFunctionHeader(functionIR);
         saveOldFramePointer();

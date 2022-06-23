@@ -2,7 +2,6 @@ package com.tiger.backend.allocationalgorithm;
 
 import com.tiger.backend.BackendVariable;
 import com.tiger.ir.interfaces.*;
-import com.tiger.types.BaseType;
 
 import java.util.*;
 
