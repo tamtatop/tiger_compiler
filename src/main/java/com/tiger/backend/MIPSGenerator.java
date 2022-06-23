@@ -5,10 +5,7 @@ import com.tiger.backend.allocationalgorithm.IntraBlockAllocator;
 import com.tiger.backend.allocationalgorithm.NaiveRegisterAllocator;
 import com.tiger.backend.allocationalgorithm.RegisterAllocationAlgorithm;
 import com.tiger.io.CancellableWriter;
-import com.tiger.ir.interfaces.FunctionIR;
-import com.tiger.ir.interfaces.IRInstruction;
-import com.tiger.ir.interfaces.IRentry;
-import com.tiger.ir.interfaces.ProgramIR;
+import com.tiger.ir.interfaces.*;
 import com.tiger.types.BaseType;
 import com.tiger.types.TypeStructure;
 
@@ -18,6 +15,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.tiger.backend.BackendVariable.WORD_SIZE;
+import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.FLOAT_SAVES;
+import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.INT_SAVES;
 
 // for a := arr[i] or arr[i] := a
 class ArrStoreLoadData {
@@ -36,8 +35,6 @@ public class MIPSGenerator {
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
     private static final HashMap<String, FloatBranchOps> asmFloatBranchOp = new HashMap<>();
-    private static final ArrayList<String> intSaveRegs = new ArrayList<>(List.of("$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"));
-    private static final ArrayList<String> floatSaveRegs = new ArrayList<>(List.of("$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"));
 
     private static class FloatBranchOps {
         String compareAndSetFlagOp;
@@ -265,7 +262,7 @@ public class MIPSGenerator {
         spOffset = assignOffsetsToAllLocals(functionIR, spOffset);
 
         // space for saved regs
-        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
+        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
         int saveRegOffset = -spOffset;
 
         // space for saved $ra
@@ -282,18 +279,40 @@ public class MIPSGenerator {
         copyArgumentValues(functionIR);
 
         for (IRBlock block : blocks) {
+            if(block.entries.size() == 0) continue;
             List<BackendVariable> promotedVars = IntraBlockAllocator.allocateVariablesInBlock(functionIR, block.entries);
+
+            List<IRentry> entries = block.entries;
+            if(entries.get(0).isLabel()) {
+                translateInstructions(functionIR, programIR, List.of(entries.get(0)), spOffset, saveRegOffset);
+                entries = entries.subList(1, entries.size());
+            }
+            IRentry lastInstruction = null;
+            if(entries.size()>0) {
+                IRentry tmpLastInstruction = entries.get(entries.size()-1);
+                if(tmpLastInstruction.isInstruction()) {
+                    IRInstructionType type = tmpLastInstruction.asInstruction().getType();
+                    if(type == IRInstructionType.BRANCH || type == IRInstructionType.GOTO || type == IRInstructionType.RETURN) {
+                        lastInstruction = tmpLastInstruction;
+                        entries = entries.subList(0, entries.size()-1);
+                    }
+                }
+            }
             for (BackendVariable promotedVar : promotedVars) {
                 LoadedVariable loader = new LoadedVariable(promotedVar, promotedVar.getAssignedRegister(), promotedVar.typeStructure.base);
                 writer.write(loader.loadAssembly());
             }
-            translateInstructions(functionIR, programIR, block.entries, spOffset, saveRegOffset);
+            translateInstructions(functionIR, programIR, entries, spOffset, saveRegOffset);
             for (BackendVariable promotedVar : promotedVars) {
                 LoadedVariable loader = new LoadedVariable(promotedVar, promotedVar.getAssignedRegister(), promotedVar.typeStructure.base);
                 writer.write(loader.flushAssembly());
             }
+            if(lastInstruction != null){
+                translateInstructions(functionIR, programIR, List.of(lastInstruction), spOffset, saveRegOffset);
+            }
         }
     }
+
 
     public void translateFunctionBriggs(FunctionIR functionIR, ProgramIR programIR) {
         generateFunctionHeader(functionIR);
@@ -303,7 +322,7 @@ public class MIPSGenerator {
         spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
 
         // space for saved regs
-        spOffset += intSaveRegs.size() * WORD_SIZE + floatSaveRegs.size() * WORD_SIZE;
+        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
         int saveRegOffset = -spOffset;
 
         // space for saved $ra
@@ -516,7 +535,7 @@ public class MIPSGenerator {
 
                             BaseType flushVarType = functionIR.fetchVariableByName(flushVarName).typeStructure.base;
                             LoadedVariable flushVar = new LoadedVariable(flushVarName, functionIR, tempRegisterAllocator, flushVarType);
-                            String returnedValueRegister = "";
+                            String returnedValueRegister;
                             String moveInstruction;
                             if (flushVarType == BaseType.INT) {
                                 returnedValueRegister = "$v0";
@@ -590,11 +609,11 @@ public class MIPSGenerator {
     }
 
     private void handleSaveRegData(int saveRegOffset, String intCommand, String floatCommand) {
-        for (String saveReg : intSaveRegs) {
+        for (String saveReg : INT_SAVES) {
             saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, saveRegOffset));
         }
-        for (String saveReg : floatSaveRegs) {
+        for (String saveReg : FLOAT_SAVES) {
             saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, saveRegOffset));
         }

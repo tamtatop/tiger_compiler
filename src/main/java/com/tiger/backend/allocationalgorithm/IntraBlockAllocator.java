@@ -22,40 +22,6 @@ class VarUsage implements Comparable<VarUsage> {
     }
 }
 
-class SaveRegisterAllocator {
-
-    private final static  String[] INT_SAVES = {"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};
-    private final static String[] FLOAT_SAVES = {"$f20", "$f21", "$f22", "$f23", "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30"};
-    private final Stack<String> intSaves = new Stack<>();
-    private final Stack<String> floatSaves = new Stack<>();
-
-    public SaveRegisterAllocator() {
-        for (String intTemp : INT_SAVES) {
-            intSaves.push(intTemp);
-        }
-        for (String floatTemp : FLOAT_SAVES) {
-            floatSaves.push(floatTemp);
-        }
-    }
-
-    public String popInt() {
-        if (intSaves.isEmpty()) {return null;}
-        return intSaves.pop();
-    }
-
-    public String popFloat() {
-        if (floatSaves.isEmpty()) {return null;}
-        return floatSaves.pop();
-    }
-
-    public String popTempOfType(BaseType type) {
-        return switch (type) {
-            case INT -> intSaves.pop();
-            case FLOAT -> floatSaves.pop();
-        };
-    }
-}
-
 
 public class IntraBlockAllocator {
 
@@ -64,9 +30,13 @@ public class IntraBlockAllocator {
         List<IRentry> body = f.getBody();
         boolean[] leaders = new boolean[body.size()];
         leaders[0] = true; // Rule i
+        int[] blockId = new int[body.size()];
+        int curBlock = 0;
+        HashMap<String, Integer> labelInstructionIndex = new HashMap<>();
         for (int i = 0; i < body.size(); i++) {
             if (body.get(i).isLabel()) {
                 leaders[i] = true; // Rule ii (all labels are used as targets in our IR)
+                labelInstructionIndex.put(body.get(i).asLabel().getName(), i);
             } else {
                 IRInstruction instr = body.get(i).asInstruction();
                 if (instr.getType() == IRInstructionType.BRANCH || instr.getType() == IRInstructionType.GOTO || instr.getType() == IRInstructionType.RETURN) {
@@ -75,21 +45,48 @@ public class IntraBlockAllocator {
                     }
                 }
             }
+            if(leaders[i]) {
+                curBlock+=1;
+                blockId[i]=curBlock;
+            }
         }
         ArrayList<IRBlock> blocks = new ArrayList<>();
         int blockStart = 0;
-        int blockIdx = 0;
         for (int i = 1; i < body.size(); i++) {
             if (leaders[i]) {
                 int blockEnd = i; // exclusive
                 // new block at: [blockStart, blockEnd)
 
-                blocks.add(new IRBlock(blockIdx, body.subList(blockStart, blockEnd)));
+                blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd)));
 
                 blockStart = blockEnd;
             }
         }
+        int blockEnd = body.size();
+        blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd)));
 
+        for (int i = 0; i < body.size(); i++) {
+            if (body.get(i).isInstruction()) {
+                IRInstruction instr = body.get(i).asInstruction();
+                String target = null;
+                if (instr.getType() == IRInstructionType.BRANCH) {
+                    target = instr.getIthCode(3);
+                }
+                if (instr.getType() == IRInstructionType.GOTO) {
+                    target = instr.getIthCode(1);
+                }
+                blocks.get(blockId[i]).neighbours
+                        .add(blocks.get(blockId[labelInstructionIndex.get(target)]));
+            }
+            if(i>0&&leaders[i]){
+                if(body.get(i-1).isInstruction()
+                        && body.get(i-1).asInstruction().getType() != IRInstructionType.RETURN
+                        && body.get(i-1).asInstruction().getType() != IRInstructionType.GOTO) {
+                    blocks.get(blockId[i-1]).neighbours
+                            .add(blocks.get(blockId[i]));
+                }
+            }
+        }
         return blocks;
     }
 
@@ -112,16 +109,22 @@ public class IntraBlockAllocator {
                 .stream()
                 .map(e -> new VarUsage(e.getKey(), e.getValue()))
                 .sorted()
-                .map(var -> {
-                    BackendVariable varData = function.fetchVariableByName(var.name);
-                    String register = saveRegisterAllocator.popTempOfType(varData.typeStructure.base);
-                    if (register != null) {
-                        varData.assignRegister(register);
-                    } else {
+                .map(var -> function.fetchVariableByName(var.name))
+                .filter(varData -> !varData.isStatic)
+                .peek(varData -> {
+                    varData.resetAllocation();
+                    if(varData.typeStructure.isArray()) {
                         varData.spill();
+                    } else {
+                        String register = saveRegisterAllocator.popTempOfType(varData.typeStructure.base);
+                        if (register != null) {
+                            varData.assignRegister(register);
+                        } else {
+                            varData.spill();
+                        }
                     }
-                    return varData;
                 })
+                .filter(varData -> !varData.isSpilled)
                 .toList();
     }
 

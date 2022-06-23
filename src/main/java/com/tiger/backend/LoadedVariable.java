@@ -78,7 +78,7 @@ public class LoadedVariable {
                     case FLOAT ->
                             String.format("mov.s %s, %s\n", this.loadedRegister, this.backing.getAssignedRegister());
                     case INT ->
-                            String.format("mtc1 %s, %s\ncvt.s.w %s, %s\n", this.loadedRegister, this.backing.getAssignedRegister(), this.loadedRegister, this.loadedRegister);
+                            String.format("mtc1 %s, %s\ncvt.s.w %s, %s\n", this.backing.getAssignedRegister(), this.loadedRegister, this.loadedRegister, this.loadedRegister);
                 }
                 ;
                 case STACK -> switch (backing.typeStructure.base) {

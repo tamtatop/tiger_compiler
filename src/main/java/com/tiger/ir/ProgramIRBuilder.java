@@ -126,8 +126,8 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         @Override
         public List<String> reads() {
             String a = this.getIthCode(1);
-            String b = this.getIthCode(1);
-            String c = this.getIthCode(1);
+            String b = this.getIthCode(2);
+            String c = this.getIthCode(3);
             return switch (this.getType()) {
                 case BINOP, BRANCH -> {
                     ArrayList<String> r = new ArrayList<>();

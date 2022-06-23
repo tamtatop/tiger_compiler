@@ -33,6 +33,7 @@ public class BackendVariable {
     public BackendVariable(String name, TypeStructure typeStructure) {
         this.name = name;
         this.typeStructure = typeStructure;
+        this.register = null;
     }
 
     public void spill() {
@@ -47,6 +48,13 @@ public class BackendVariable {
         assert !allocated;
         this.register = register;
         allocated = true;
+    }
+
+    public void resetAllocation() {
+        if(isStatic)return;
+        allocated = false;
+        isSpilled = false;
+        register = null;
     }
 
     public boolean isStatic() {
