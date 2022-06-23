@@ -260,6 +260,15 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         public IRLabel asLabel() {
             return null;
         }
+
+        @Override
+        public String toString() {
+            StringBuilder res = new StringBuilder(op);
+            for (String arg : args) {
+                res.append(String.format(", %s", arg));
+            }
+            return res.toString();
+        }
     }
 
     private static class Label implements IRLabel, IRentry {
@@ -293,6 +302,11 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         @Override
         public IRLabel asLabel() {
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s:\n", name);
         }
     }
 
