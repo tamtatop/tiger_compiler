@@ -12,13 +12,13 @@ public class BackendVariable {
     public final static int WORD_SIZE = 4;
 
     // TODO: add more here
-    public String[] ALLOCATABLE_INT_REGISTERS = new String[]{"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};
-    public String[] ALLOCATABLE_FLOAT_REGISTERS = new String[]{"$f20", "$f21", "$f22", "$f23", "$f24", "$f25"};
+//    public String[] ALLOCATABLE_INT_REGISTERS = new String[]{"$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7"};
+//    public String[] ALLOCATABLE_FLOAT_REGISTERS = new String[]{"$f20", "$f21", "$f22", "$f23", "$f24", "$f25"};
 
     public String name;
     public TypeStructure typeStructure;
     public boolean isStatic;
-    public int registerIndex;
+    public String register;
     public boolean isSpilled;
     public boolean allocated;
     public int stackOffset;
@@ -27,7 +27,6 @@ public class BackendVariable {
         this.name = mangledName(nakedBase);
         this.typeStructure = nakedBase.typeStructure;
         this.allocated = isStatic;
-        this.registerIndex = -1;
         this.isStatic = isStatic;
     }
 
@@ -43,10 +42,10 @@ public class BackendVariable {
         allocated = true;
     }
 
-    public void assignRegister(int registerIndex) {
+    public void assignRegister(String register) {
         assert !isStatic;
         assert !allocated;
-        this.registerIndex = registerIndex;
+        this.register = register;
         allocated = true;
     }
 
@@ -60,12 +59,13 @@ public class BackendVariable {
 
     public String getAssignedRegister() {
         assert this.allocated : "BackendVariable is not yet allocated";
-        assert this.registerIndex != -1 : "BackendVariable is not allocated in a register";
-        if (this.typeStructure.base == BaseType.INT) {
-            return ALLOCATABLE_INT_REGISTERS[this.registerIndex];
-        } else {
-            return ALLOCATABLE_FLOAT_REGISTERS[this.registerIndex];
-        }
+        assert this.register != null : "BackendVariable is not allocated in a register";
+//        if (this.typeStructure.base == BaseType.INT) {
+//            return ALLOCATABLE_INT_REGISTERS[this.registerIndex];
+//        } else {
+//            return ALLOCATABLE_FLOAT_REGISTERS[this.registerIndex];
+//        }
+        return register;
     }
 
     public String staticName() {
