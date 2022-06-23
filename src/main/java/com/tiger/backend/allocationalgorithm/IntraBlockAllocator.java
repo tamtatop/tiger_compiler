@@ -56,13 +56,13 @@ public class IntraBlockAllocator {
                 int blockEnd = i; // exclusive
                 // new block at: [blockStart, blockEnd)
 
-                blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd)));
+                blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd), f.getFunctionName()));
 
                 blockStart = blockEnd;
             }
         }
         int blockEnd = body.size();
-        blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd)));
+        blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd), f.getFunctionName()));
 
         for (int i = 0; i < body.size(); i++) {
             if (body.get(i).isInstruction()) {

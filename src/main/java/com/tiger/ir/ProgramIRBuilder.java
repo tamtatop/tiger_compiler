@@ -263,11 +263,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public String toString() {
-            StringBuilder res = new StringBuilder(op);
-            for (String arg : args) {
-                res.append(String.format(", %s", arg));
-            }
-            return res.toString();
+            return String.join(", ", args);
         }
     }
 
@@ -306,7 +302,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
 
         @Override
         public String toString() {
-            return String.format("%s:\n", name);
+            return String.format("%s:", name);
         }
     }
 

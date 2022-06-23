@@ -77,9 +77,13 @@ public class MIPSGenerator {
         translateStaticDataSection(programIR);
 
         writer.write(".text\n");
+
+        CfgGraphVizGenerator.generateCfgInit(cfgWriter);
         for (FunctionIR functionIR : programIR.getFunctions()) {
             translateFunction(functionIR, programIR, algorithm);
         }
+        CfgGraphVizGenerator.generateCfgEnd(cfgWriter);
+
         writer.write("""
 
                 _fun_printi:
@@ -254,7 +258,7 @@ public class MIPSGenerator {
     public void translateFunctionIntraBlock(FunctionIR functionIR, ProgramIR programIR) {
         List<IRBlock> blocks = IntraBlockAllocator.findBlocks(functionIR);
 
-        CfgGraphVizGenerator.generateCfgGraphViz(cfgWriter, blocks);
+        CfgGraphVizGenerator.generateCfgFunctionBlocks(cfgWriter, blocks);
 
         generateFunctionHeader(functionIR);
         saveOldFramePointer();
