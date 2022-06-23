@@ -13,5 +13,6 @@ public class IRBlock {
     public IRBlock(int blockIdx, List<IRentry> entries) {
         this.blockIdx = blockIdx;
         this.entries = entries;
+        this.neighbours = new ArrayList<>();
     }
 }

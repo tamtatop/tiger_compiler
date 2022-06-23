@@ -74,8 +74,10 @@ public class IntraBlockAllocator {
                 if (instr.getType() == IRInstructionType.GOTO) {
                     target = instr.getIthCode(1);
                 }
-                blocks.get(blockId[i]).neighbours
-                        .add(blocks.get(blockId[labelInstructionIndex.get(target)]));
+                if(target != null) {
+                    blocks.get(blockId[i]).neighbours
+                            .add(blocks.get(blockId[labelInstructionIndex.get(target)]));
+                }
             }
             if(i>0&&leaders[i]){
                 if(body.get(i-1).isInstruction()

@@ -74,7 +74,7 @@ class TigerArgs {
             this.irFilename = baseFilename + ".ir";
         }
         if(cfgOut) {
-            this.cfgFilename = baseFilename + ".cfg";
+            this.cfgFilename = baseFilename + ".cfg.gv";
         }
         if(livenessOut) {
             this.livenessFilename = baseFilename + ".liveness";
