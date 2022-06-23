@@ -39,10 +39,12 @@ class SaveRegisterAllocator {
     }
 
     public String popInt() {
+        if (intSaves.isEmpty()) {return null;}
         return intSaves.pop();
     }
 
     public String popFloat() {
+        if (floatSaves.isEmpty()) {return null;}
         return floatSaves.pop();
     }
 
@@ -112,7 +114,12 @@ public class IntraBlockAllocator {
                 .sorted()
                 .map(var -> {
                     BackendVariable varData = function.fetchVariableByName(var.name);
-                    varData.assignRegister(saveRegisterAllocator.popTempOfType(varData.typeStructure.base));
+                    String register = saveRegisterAllocator.popTempOfType(varData.typeStructure.base);
+                    if (register != null) {
+                        varData.assignRegister(register);
+                    } else {
+                        varData.spill();
+                    }
                     return varData;
                 })
                 .toList();
