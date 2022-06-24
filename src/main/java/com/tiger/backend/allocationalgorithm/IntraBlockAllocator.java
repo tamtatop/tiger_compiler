@@ -2,6 +2,7 @@ package com.tiger.backend.allocationalgorithm;
 
 import com.tiger.backend.BackendVariable;
 import com.tiger.ir.interfaces.*;
+import org.w3c.dom.ls.LSOutput;
 
 import java.util.*;
 
@@ -44,14 +45,15 @@ public class IntraBlockAllocator {
                     }
                 }
             }
-            if(leaders[i]) {
-                curBlock+=1;
-                blockId[i]=curBlock;
+            if (leaders[i]) {
+                curBlock += 1;
+                blockId[i] = curBlock;
             }
+            blockId[i] = curBlock;
         }
         ArrayList<IRBlock> blocks = new ArrayList<>();
         int blockStart = 0;
-        for (int i = 1; i < body.size(); i++) {
+        for (int i = 0; i < body.size(); i++) {
             if (leaders[i]) {
                 int blockEnd = i; // exclusive
                 // new block at: [blockStart, blockEnd)
@@ -61,6 +63,7 @@ public class IntraBlockAllocator {
                 blockStart = blockEnd;
             }
         }
+
         int blockEnd = body.size();
         blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd), f.getFunctionName()));
 
@@ -74,16 +77,16 @@ public class IntraBlockAllocator {
                 if (instr.getType() == IRInstructionType.GOTO) {
                     target = instr.getIthCode(1);
                 }
-                if(target != null) {
+                if (target != null) {
                     blocks.get(blockId[i]).neighbours
                             .add(blocks.get(blockId[labelInstructionIndex.get(target)]));
                 }
             }
-            if(i>0&&leaders[i]){
-                if(body.get(i-1).isInstruction()
-                        && body.get(i-1).asInstruction().getType() != IRInstructionType.RETURN
-                        && body.get(i-1).asInstruction().getType() != IRInstructionType.GOTO) {
-                    blocks.get(blockId[i-1]).neighbours
+            if (i > 0 && leaders[i]) {
+                if (body.get(i - 1).isInstruction()
+                        && body.get(i - 1).asInstruction().getType() != IRInstructionType.RETURN
+                        && body.get(i - 1).asInstruction().getType() != IRInstructionType.GOTO) {
+                    blocks.get(blockId[i - 1]).neighbours
                             .add(blocks.get(blockId[i]));
                 }
             }
@@ -114,7 +117,7 @@ public class IntraBlockAllocator {
                 .filter(varData -> !varData.isStatic)
                 .peek(varData -> {
                     varData.resetAllocation();
-                    if(varData.typeStructure.isArray()) {
+                    if (varData.typeStructure.isArray()) {
                         varData.spill();
                     } else {
                         String register = saveRegisterAllocator.popTempOfType(varData.typeStructure.base);

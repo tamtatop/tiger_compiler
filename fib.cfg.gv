@@ -1,5 +1,8 @@
 digraph cfg {
 
+main_1 [label = "", shape = "rect"]
+main_1 -> {}
+
 main_1 [label = "assign, _2_tmp_0, 1
 assign, _2_print_power, _2_tmp_0
 assign, _2_tmp_1, 1
@@ -44,11 +47,11 @@ assign, _2_tmp_20, 0.000000
 assign, _2_wire_loss, _2_tmp_20
 assign, _2_tmp_21, 0
 assign, _2_it, _2_tmp_21", shape = "rect"]
-main_1 -> {main_3, main_22, main_4, main_5, main_7, main_6, main_5, main_18, main_8, main_9, main_11, main_10, main_9, main_12, main_14, main_13, main_12, main_15, main_17, main_16, main_15, main_18, main_20, main_19, main_21, main_21, main_3}
+main_1 -> {main_2}
 
 main_2 [label = "_for_1:
 brgt, _2_it, _2_n_iterations, _after_for_2", shape = "rect"]
-main_2 -> {}
+main_2 -> {main_21, main_3}
 
 main_3 [label = "sub, _2_x_f, _2_x_i, _2_tmp_22
 div, _2_tmp_22, _2_dt, _2_tmp_23
@@ -67,16 +70,16 @@ mult, _2_tmp_31, _2_CDa, _2_tmp_32
 assign, _2_tmp_33, 2
 assign, _2_tmp_35, 0
 assign, _2_tmp_34, 1", shape = "rect"]
-main_3 -> {}
+main_3 -> {main_4}
 
 main_4 [label = "_pow_3:
 brgeq, _2_tmp_35, _2_tmp_33, _after_pow_4", shape = "rect"]
-main_4 -> {}
+main_4 -> {main_6, main_5}
 
 main_5 [label = "mult, _2_tmp_34, _2_dx_dt, _2_tmp_34
 add, _2_tmp_35, 1, _2_tmp_35
 goto, _pow_3", shape = "rect"]
-main_5 -> {}
+main_5 -> {main_4}
 
 main_6 [label = "_after_pow_4:
 mult, _2_tmp_32, _2_tmp_34, _2_tmp_36
@@ -88,22 +91,22 @@ assign, _2_motor_force, _2_tmp_39
 mult, _2_motor_force, _2_radius, _2_tmp_40
 assign, _2_torque, _2_tmp_40
 breq, _2_calculate_efficiency, 0, _if_false_do_this_5", shape = "rect"]
-main_6 -> {}
+main_6 -> {main_17, main_7}
 
 main_7 [label = "assign, _2_tmp_41, 0.011000
 assign, _2_tmp_42, 2
 assign, _2_tmp_44, 0
 assign, _2_tmp_43, 1", shape = "rect"]
-main_7 -> {}
+main_7 -> {main_8}
 
 main_8 [label = "_pow_6:
 brgeq, _2_tmp_44, _2_tmp_42, _after_pow_7", shape = "rect"]
-main_8 -> {}
+main_8 -> {main_10, main_9}
 
 main_9 [label = "mult, _2_tmp_43, _2_Iphase, _2_tmp_43
 add, _2_tmp_44, 1, _2_tmp_44
 goto, _pow_6", shape = "rect"]
-main_9 -> {}
+main_9 -> {main_8}
 
 main_10 [label = "_after_pow_7:
 mult, _2_tmp_41, _2_tmp_43, _2_tmp_45
@@ -134,16 +137,16 @@ assign, _2_bus_current, _2_tmp_64
 assign, _2_tmp_65, 2
 assign, _2_tmp_67, 0
 assign, _2_tmp_66, 1", shape = "rect"]
-main_10 -> {}
+main_10 -> {main_11}
 
 main_11 [label = "_pow_8:
 brgeq, _2_tmp_67, _2_tmp_65, _after_pow_9", shape = "rect"]
-main_11 -> {}
+main_11 -> {main_13, main_12}
 
 main_12 [label = "mult, _2_tmp_66, _2_bus_current, _2_tmp_66
 add, _2_tmp_67, 1, _2_tmp_67
 goto, _pow_8", shape = "rect"]
-main_12 -> {}
+main_12 -> {main_11}
 
 main_13 [label = "_after_pow_9:
 mult, _2_R_batt, _2_tmp_66, _2_tmp_68
@@ -162,25 +165,25 @@ mult, _2_tmp_76, _2_R_line, _2_tmp_77
 assign, _2_tmp_78, 2
 assign, _2_tmp_80, 0
 assign, _2_tmp_79, 1", shape = "rect"]
-main_13 -> {}
+main_13 -> {main_14}
 
 main_14 [label = "_pow_10:
 brgeq, _2_tmp_80, _2_tmp_78, _after_pow_11", shape = "rect"]
-main_14 -> {}
+main_14 -> {main_16, main_15}
 
 main_15 [label = "mult, _2_tmp_79, _2_Iphase, _2_tmp_79
 add, _2_tmp_80, 1, _2_tmp_80
 goto, _pow_10", shape = "rect"]
-main_15 -> {}
+main_15 -> {main_14}
 
 main_16 [label = "_after_pow_11:
 mult, _2_tmp_77, _2_tmp_79, _2_tmp_81
 assign, _2_wire_loss, _2_tmp_81", shape = "rect"]
-main_16 -> {}
+main_16 -> {main_17}
 
 main_17 [label = "_if_false_do_this_5:
 breq, _2_print_power, 0, _if_false_do_this_13", shape = "rect"]
-main_17 -> {}
+main_17 -> {main_19, main_18}
 
 main_18 [label = "mult, _2_torque, _2_dx_dt, _2_tmp_82
 div, _2_tmp_82, _2_radius, _2_tmp_83
@@ -190,11 +193,11 @@ add, _2_tmp_84, _2_wire_loss, _2_tmp_85
 assign, _2_power, _2_tmp_85
 call, printf, _2_power
 goto, _after_if_do_this_12", shape = "rect"]
-main_18 -> {}
+main_18 -> {main_20}
 
 main_19 [label = "_if_false_do_this_13:
 call, printf, _2_torque", shape = "rect"]
-main_19 -> {}
+main_19 -> {main_20}
 
 main_20 [label = "_after_if_do_this_12:
 assign, _2_tmp_86, 1.000000
@@ -202,7 +205,7 @@ sub, _2_bus_voltage, _2_tmp_86, _2_tmp_87
 assign, _2_bus_voltage, _2_tmp_87
 add, _2_it, 1, _2_it
 goto, _for_1", shape = "rect"]
-main_20 -> {}
+main_20 -> {main_2}
 
 main_21 [label = "_after_for_2:
 assign, _1_tmp_88, 0
