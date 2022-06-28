@@ -24,7 +24,7 @@ public class CfgGraphVizGenerator {
 
             List<String> blockNeibz = block.neighbours.stream().map(neighbourBlock -> String.format("%s_%d", neighbourBlock.functionName, neighbourBlock.blockIdx)).toList();
             System.out.println("BLA: " + blockNeibz);
-            String neighbours = String.format("{%s}",String.join(", ", blockNeibz));
+            String neighbours = String.format("{%s}",String.join("; ", blockNeibz));
             writer.write(String.format("%s_%d -> %s\n", block.functionName, block.blockIdx, neighbours));
         }
     }
