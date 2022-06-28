@@ -84,14 +84,7 @@ public class LivenessAnalysis {
                 int idx = block.startIdx + i;
                 HashSet<String> livein = block.liveIn.get(i);
                 HashSet<String> liveout = block.liveOut.get(i);
-                livenessWriter.write(String.format("#%d: %s livein = {%s} liveout = {%s}\n", idx, block.entries.get(i).toString(), concatWithCommas(livein), concatWithCommas(liveout)));
-                IRentry s = block.entries.get(i);
-                if(s.isInstruction()) {
-                    livenessWriter.write(concatWithCommas(s.asInstruction().reads()));
-                    livenessWriter.write("\n");
-                    livenessWriter.write(concatWithCommas(s.asInstruction().writes()));
-                    livenessWriter.write("\n");
-                }
+                livenessWriter.write(String.format("#%d: \"%s\" -- livein = {%s} liveout = {%s}\n", idx, block.entries.get(i).toString(), concatWithCommas(livein), concatWithCommas(liveout)));
             }
         }
         for (BackendVariable localVariable : functionIR.getLocalVariables()) {
