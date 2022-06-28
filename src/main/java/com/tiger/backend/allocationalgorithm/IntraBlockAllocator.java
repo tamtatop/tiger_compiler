@@ -1,9 +1,11 @@
 package com.tiger.backend.allocationalgorithm;
 
 import com.tiger.backend.BackendVariable;
+import com.tiger.io.CancellableWriter;
 import com.tiger.ir.interfaces.*;
 import org.w3c.dom.ls.LSOutput;
 
+import java.io.Writer;
 import java.util.*;
 
 class VarUsage implements Comparable<VarUsage> {
@@ -58,14 +60,14 @@ public class IntraBlockAllocator {
                 int blockEnd = i; // exclusive
                 // new block at: [blockStart, blockEnd)
 
-                blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd), f.getFunctionName()));
+                blocks.add(new IRBlock(blockId[blockStart], blockStart, body.subList(blockStart, blockEnd), f.getFunctionName()));
 
                 blockStart = blockEnd;
             }
         }
 
         int blockEnd = body.size();
-        blocks.add(new IRBlock(blockId[blockStart], body.subList(blockStart, blockEnd), f.getFunctionName()));
+        blocks.add(new IRBlock(blockId[blockStart], blockStart, body.subList(blockStart, blockEnd), f.getFunctionName()));
 
         for (int i = 0; i < body.size(); i++) {
             if (body.get(i).isInstruction()) {
@@ -143,23 +145,3 @@ public class IntraBlockAllocator {
     }
 }
 
-class LiveVarsOfInstr {
-    List<BackendVariable> in;
-    List<BackendVariable> out;
-}
-
-class LivenessAnalysis {
-
-    public static void performLivenessAnalysis(List<IRBlock> blocks) {
-        List<List<BackendVariable>> liveness = new ArrayList<>(new ArrayList<>());
-        for (IRBlock block : blocks) {
-            for (IRentry instruction : block.entries) {
-                if (instruction.isInstruction()){
-
-                } else {
-
-                }
-            }
-        }
-    }
-}
