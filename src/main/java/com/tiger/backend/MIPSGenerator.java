@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.tiger.backend.BackendVariable.WORD_SIZE;
+import static com.tiger.backend.allocationalgorithm.LivenessAnalysis.performLivenessAnalysis;
 import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.FLOAT_SAVES;
 import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.INT_SAVES;
 
@@ -33,6 +34,7 @@ public class MIPSGenerator {
     private static final HashMap<String, String> asmBinaryOp = new HashMap<>();
     private static final HashMap<String, String> asmIntBranchOp = new HashMap<>();
     private static final HashMap<String, FloatBranchOps> asmFloatBranchOp = new HashMap<>();
+    private final CancellableWriter livenessWriter;
 
     private static class FloatBranchOps {
         String compareAndSetFlagOp;
@@ -68,9 +70,10 @@ public class MIPSGenerator {
 
     }
 
-    public MIPSGenerator(CancellableWriter writer, CancellableWriter cfgWriter) {
+    public MIPSGenerator(CancellableWriter writer, CancellableWriter cfgWriter, CancellableWriter livenessWriter) {
         this.writer = writer;
         this.cfgWriter = cfgWriter;
+        this.livenessWriter = livenessWriter;
     }
 
     public void translateProgram(ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
@@ -84,6 +87,10 @@ public class MIPSGenerator {
         }
         CfgGraphVizGenerator.generateCfgEnd(cfgWriter);
 
+        generateOSShimCode();
+    }
+
+    private void generateOSShimCode() {
         writer.write("""
 
                 _fun_printi:
@@ -320,30 +327,34 @@ public class MIPSGenerator {
 
 
     public void translateFunctionBriggs(FunctionIR functionIR, ProgramIR programIR) {
-        generateFunctionHeader(functionIR);
-        saveOldFramePointer();
-
-        int spOffset = 0;
-        spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
-
-        // space for saved regs
-        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
-        int saveRegOffset = -spOffset;
-
-        // space for saved $ra
-        spOffset += WORD_SIZE;
-
-        // allocate stack frame
-        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
-
-        // actually save regs and ra
-        handleSaveRegData(saveRegOffset, "sw", "s.s");
-        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
-
-        // ARGUMENT HANDLING:
-        copyArgumentValues(functionIR);
-
-        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, saveRegOffset);
+        List<IRBlock> blocks = IntraBlockAllocator.findBlocks(functionIR);
+        CfgGraphVizGenerator.generateCfgFunctionBlocks(cfgWriter, blocks);
+        performLivenessAnalysis(functionIR, blocks, livenessWriter);
+//
+//        generateFunctionHeader(functionIR);
+//        saveOldFramePointer();
+//
+//        int spOffset = 0;
+//        spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
+//
+//        // space for saved regs
+//        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
+//        int saveRegOffset = -spOffset;
+//
+//        // space for saved $ra
+//        spOffset += WORD_SIZE;
+//
+//        // allocate stack frame
+//        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+//
+//        // actually save regs and ra
+//        handleSaveRegData(saveRegOffset, "sw", "s.s");
+//        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+//
+//        // ARGUMENT HANDLING:
+//        copyArgumentValues(functionIR);
+//
+//        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, saveRegOffset);
     }
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
@@ -363,7 +374,7 @@ public class MIPSGenerator {
                 translateFunctionIntraBlock(functionIR, programIR);
             }
             case BRIGGS -> {
-                //   translateFunctionBriggs(functionIR, programIR);
+                translateFunctionBriggs(functionIR, programIR);
             }
         }
     }

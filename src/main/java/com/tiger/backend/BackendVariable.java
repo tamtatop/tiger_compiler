@@ -22,6 +22,7 @@ public class BackendVariable {
     public boolean isSpilled;
     public boolean allocated;
     public int stackOffset;
+    private boolean[] livenessUses = null;
 
     public BackendVariable(NakedVariable nakedBase, boolean isStatic) {
         this.name = mangledName(nakedBase);
@@ -78,5 +79,23 @@ public class BackendVariable {
 
     public String staticName() {
         return name;
+    }
+
+    public void setLivenessBooleans(boolean[] uses) {
+        this.livenessUses = uses;
+    }
+
+    public boolean isUsedAt(int idx) {
+        assert this.livenessUses != null;
+        return this.livenessUses[idx];
+    }
+
+    public boolean doesIntersect(BackendVariable other) {
+        for (int i = 0; i < this.livenessUses.length; i++) {
+            if(this.isUsedAt(i) && other.isUsedAt(i)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

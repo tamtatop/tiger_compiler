@@ -8,7 +8,7 @@ import com.tiger.ir.interfaces.ProgramIR;
 public class CompilerBackend {
 
     public static void runBackend(ProgramIR programIR, CancellableWriter cfgWriter, CancellableWriter livenessWriter, CancellableWriter mipsWriter, RegisterAllocationAlgorithm algorithm) {
-        MIPSGenerator mipsGenerator = new MIPSGenerator(mipsWriter, cfgWriter);
+        MIPSGenerator mipsGenerator = new MIPSGenerator(mipsWriter, cfgWriter, livenessWriter);
         mipsGenerator.translateProgram(programIR, algorithm);
     }
 
