@@ -7,11 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class CfgGraphVizGenerator {
-//    public static void generateCfgGraphViz(CancellableWriter writer, List<IRBlock> blocks) {
-//        writer.write("digraph cfg {\n");
-//
-//        writer.write("}\n");
-//    }
+
     public static void generateCfgInit(CancellableWriter writer) {
         writer.write("digraph cfg {\n");
     }

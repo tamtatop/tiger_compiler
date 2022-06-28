@@ -142,3 +142,24 @@ public class IntraBlockAllocator {
         }
     }
 }
+
+class LiveVarsOfInstr {
+    List<BackendVariable> in;
+    List<BackendVariable> out;
+}
+
+class LivenessAnalysis {
+
+    public static void performLivenessAnalysis(List<IRBlock> blocks) {
+        List<List<BackendVariable>> liveness = new ArrayList<>(new ArrayList<>());
+        for (IRBlock block : blocks) {
+            for (IRentry instruction : block.entries) {
+                if (instruction.isInstruction()){
+
+                } else {
+
+                }
+            }
+        }
+    }
+}
