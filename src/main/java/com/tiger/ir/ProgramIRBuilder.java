@@ -321,7 +321,7 @@ public class ProgramIRBuilder implements IrGeneratorListener {
         int loopDepth = 0;
         for (String line : irBody.lines().toList()) {
             line = line.trim();
-            if (line.length() == 0) return;
+            if (line.length() == 0) continue;
             if (!line.contains(":")) {
                 int opEndIdx = line.indexOf(",");
                 String op = line.substring(0, opEndIdx).trim();
