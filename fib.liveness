@@ -1,0 +1,59 @@
+function main:
+#0: "assign, _2_a, 0" -- livein = {} liveout = {_2_a}
+#1: "assign, _2_i, 0" -- livein = {_2_a} liveout = {_2_i,_2_a}
+#2: "assign, _2_b, 1" -- livein = {_2_i,_2_a} liveout = {_2_i,_2_b,_2_a}
+#3: "add, _2_a, _2_b, _2_tmp_0" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_0,_2_i,_2_b}
+#4: "assign, _2_a, _2_tmp_0" -- livein = {_2_tmp_0,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#5: "add, _2_a, _2_b, _2_tmp_1" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_1,_2_i,_2_b}
+#6: "assign, _2_a, _2_tmp_1" -- livein = {_2_tmp_1,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#7: "add, _2_a, _2_b, _2_tmp_2" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_2,_2_b}
+#8: "assign, _2_a, _2_tmp_2" -- livein = {_2_i,_2_tmp_2,_2_b} liveout = {_2_i,_2_b,_2_a}
+#9: "_while_1:" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#10: "assign, _2_tmp_3, 10" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_3,_2_b,_2_a}
+#11: "assign, _2_tmp_4, 1" -- livein = {_2_i,_2_tmp_3,_2_b,_2_a} liveout = {_2_i,_2_tmp_3,_2_tmp_4,_2_b,_2_a}
+#12: "brlt, _2_i, _2_tmp_3, _cmp_op_3" -- livein = {_2_i,_2_tmp_3,_2_tmp_4,_2_b,_2_a} liveout = {_2_i,_2_tmp_4,_2_b,_2_a}
+#13: "assign, _2_tmp_4, 0" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_4,_2_b,_2_a}
+#14: "_cmp_op_3:" -- livein = {_2_i,_2_tmp_4,_2_b,_2_a} liveout = {_2_i,_2_tmp_4,_2_b,_2_a}
+#15: "breq, _2_tmp_4, 0, _after_while_2" -- livein = {_2_i,_2_tmp_4,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#16: "add, _2_a, _2_b, _2_tmp_5" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_5,_2_b}
+#17: "assign, _2_a, _2_tmp_5" -- livein = {_2_i,_2_tmp_5,_2_b} liveout = {_2_i,_2_b,_2_a}
+#18: "add, _2_a, _2_b, _2_tmp_6" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_6,_2_b}
+#19: "assign, _2_a, _2_tmp_6" -- livein = {_2_i,_2_tmp_6,_2_b} liveout = {_2_i,_2_b,_2_a}
+#20: "add, _2_a, _2_b, _2_tmp_7" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_7,_2_b}
+#21: "assign, _2_a, _2_tmp_7" -- livein = {_2_i,_2_tmp_7,_2_b} liveout = {_2_i,_2_b,_2_a}
+#22: "assign, _2_tmp_8, 5" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_tmp_8,_2_a}
+#23: "assign, _2_tmp_9, 1" -- livein = {_2_i,_2_b,_2_tmp_8,_2_a} liveout = {_2_i,_2_tmp_9,_2_b,_2_tmp_8,_2_a}
+#24: "brlt, _2_i, _2_tmp_8, _cmp_op_4" -- livein = {_2_i,_2_tmp_9,_2_b,_2_tmp_8,_2_a} liveout = {_2_i,_2_tmp_9,_2_b,_2_a}
+#25: "assign, _2_tmp_9, 0" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_9,_2_b,_2_a}
+#26: "_cmp_op_4:" -- livein = {_2_i,_2_tmp_9,_2_b,_2_a} liveout = {_2_i,_2_tmp_9,_2_b,_2_a}
+#27: "breq, _2_tmp_9, 0, _if_false_do_this_6" -- livein = {_2_i,_2_tmp_9,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#28: "add, _2_a, _2_b, _2_tmp_10" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_10,_2_i,_2_b}
+#29: "assign, _2_a, _2_tmp_10" -- livein = {_2_tmp_10,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#30: "add, _2_a, _2_b, _2_tmp_11" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_11,_2_i,_2_b}
+#31: "assign, _2_a, _2_tmp_11" -- livein = {_2_tmp_11,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#32: "add, _2_a, _2_b, _2_tmp_12" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_12,_2_i,_2_b}
+#33: "assign, _2_a, _2_tmp_12" -- livein = {_2_tmp_12,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#34: "goto, _after_if_do_this_5" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#35: "_if_false_do_this_6:" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#36: "sub, _2_a, _2_b, _2_tmp_13" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_13,_2_i,_2_b}
+#37: "assign, _2_a, _2_tmp_13" -- livein = {_2_tmp_13,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#38: "sub, _2_a, _2_b, _2_tmp_14" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_tmp_14,_2_i,_2_b}
+#39: "assign, _2_a, _2_tmp_14" -- livein = {_2_tmp_14,_2_i,_2_b} liveout = {_2_i,_2_b,_2_a}
+#40: "sub, _2_a, _2_b, _2_tmp_15" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_tmp_15}
+#41: "assign, _2_a, _2_tmp_15" -- livein = {_2_i,_2_b,_2_tmp_15} liveout = {_2_i,_2_b,_2_a}
+#42: "_after_if_do_this_5:" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#43: "add, _2_a, _2_b, _2_tmp_16" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_tmp_16}
+#44: "assign, _2_a, _2_tmp_16" -- livein = {_2_i,_2_b,_2_tmp_16} liveout = {_2_i,_2_b,_2_a}
+#45: "add, _2_a, _2_b, _2_tmp_17" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_17,_2_b}
+#46: "assign, _2_a, _2_tmp_17" -- livein = {_2_i,_2_tmp_17,_2_b} liveout = {_2_i,_2_b,_2_a}
+#47: "add, _2_a, _2_b, _2_tmp_18" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_tmp_18}
+#48: "assign, _2_a, _2_tmp_18" -- livein = {_2_i,_2_b,_2_tmp_18} liveout = {_2_i,_2_b,_2_a}
+#49: "assign, _2_tmp_19, 1" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_tmp_19,_2_b,_2_a}
+#50: "add, _2_i, _2_tmp_19, _2_tmp_20" -- livein = {_2_i,_2_tmp_19,_2_b,_2_a} liveout = {_2_tmp_20,_2_b,_2_a}
+#51: "assign, _2_i, _2_tmp_20" -- livein = {_2_tmp_20,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#52: "goto, _while_1" -- livein = {_2_i,_2_b,_2_a} liveout = {_2_i,_2_b,_2_a}
+#53: "_after_while_2:" -- livein = {_2_a} liveout = {_2_a}
+#54: "call, printi, _2_a" -- livein = {_2_a} liveout = {}
+#55: "assign, _1_tmp_21, 0" -- livein = {} liveout = {_1_tmp_21}
+#56: "return, _1_tmp_21" -- livein = {_1_tmp_21} liveout = {}
+#57: "return" -- livein = {} liveout = {}

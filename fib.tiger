@@ -1,107 +1,39 @@
-/* Test Program: motor efficiency */
+/* Test: benchmark program 2 */
 
-program demo_motor
+program benchmark2
 let
 begin
 
     function main() : int
     begin
         let
-            var motor_force : float;
-            var drag : float;
-            var friction : float;
-            var M : float;
-            var dv_dt : float;
-            var rho : float;
-            var CDa : float;
-            var dx_dt : float;
-            var G : float;
-            var Crr1 : float;
-            var Crr2 : float;
-            var dt : float;
-            var x_i : float;
-            var x_f : float;
-            var v_i : float;
-            var torque : float;
-            var radius : float;
-            var power : float;
-            var wire_loss : float;
-            var R_line : float;
-            var R_batt : float;
-            var Iphase : float;
-            var component_efficiency : float;
-            var mc_efficiency : float;
-            var motor_efficiency : float;
-            var batt_efficiency : float;
-            var mc_power_loss : float;
-            var bus_power : float;
-            var rpm_max : float;
-            var bus_voltage : float;
-            var batt_dissipated : float;
-            var bus_current : float;
-            var nominal_power : float;
-            var print_power : int;
-            var calculate_efficiency : int;
-            var n_iterations : int;
-            var it : int;
+            var a, i : int := 0;
+            var b : int := 1;
         begin
-            print_power := 1;
-            calculate_efficiency := 1;
-            n_iterations := 5;
+            a := a + b;
+            a := a + b;
+            a := a + b;
+            while (i < 10) do
+                a := a + b;
+                a := a + b;
+                a := a + b;
 
-            M := 320.0;
-            G := 9.81;
-            Crr1 := 0.009;
-            Crr2 := 0.001;
-            rho := 1.225;
-            CDa := 0.2;
-            radius := 0.28;
-            R_line := 0.05;
-            R_batt := 0.16;
-
-            x_i := 1000.0;
-            v_i := 10.0;
-            x_f := 1025.0;
-            dt := 2.1;
-            Iphase := 11.6;
-            bus_power := 900.0;
-            bus_voltage := 140.25;
-
-            component_efficiency := 1.0;
-            wire_loss := 0.0;
-
-            for it := 0 to n_iterations do
-                dx_dt := (x_f - x_i) / dt;
-                dv_dt := (dx_dt - v_i) / dt;
-
-                friction := M * G * (Crr1 + Crr2 * dx_dt);
-                drag := 0.5 * rho * CDa * dx_dt ** 2;
-                motor_force := drag + friction + M * dv_dt;
-                torque := motor_force * radius;
-
-                if (calculate_efficiency) then
-                    mc_power_loss := 0.011 * Iphase ** 2 + 0.0033 * Iphase + 0.02;
-                    mc_efficiency := 1.0 - mc_power_loss / bus_power;
-                    rpm_max := 7.6 * (bus_voltage - 79.0) + 600.0;
-                    motor_efficiency := rpm_max / (rpm_max + 0.18 * torque);
-                    bus_current := bus_power / bus_voltage;
-                    batt_dissipated := R_batt * bus_current ** 2;
-                    batt_efficiency := 1.0 / (1.0 + batt_dissipated / bus_power);
-
-                    component_efficiency := mc_efficiency * motor_efficiency * batt_efficiency;
-                    wire_loss := 3.0 * R_line * Iphase ** 2;
-                endif;
-
-                if (print_power) then
-                    nominal_power := torque * dx_dt / radius;
-                    power := nominal_power * component_efficiency + wire_loss;
-                    printf(power);
+                if (i < 5) then
+                    a := a + b;
+                    a := a + b;
+                    a := a + b;
                 else
-                    printf(torque);
+                    a := a - b;
+                    a := a - b;
+                    a := a - b;
                 endif;
 
-                bus_voltage := bus_voltage - 1.0;
+                a := a + b;
+                a := a + b;
+                a := a + b;
+                i := i + 1;
             enddo;
+            printi(a);
         end
         return 0;
     end

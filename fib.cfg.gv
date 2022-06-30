@@ -3,215 +3,85 @@ digraph cfg {
 main_1 [label = "", shape = "rect"]
 main_1 -> {}
 
-main_1 [label = "assign, _2_tmp_0, 1
-assign, _2_print_power, _2_tmp_0
-assign, _2_tmp_1, 1
-assign, _2_calculate_efficiency, _2_tmp_1
-assign, _2_tmp_2, 5
-assign, _2_n_iterations, _2_tmp_2
-assign, _2_tmp_3, 320.000000
-assign, _2_M, _2_tmp_3
-assign, _2_tmp_4, 9.810000
-assign, _2_G, _2_tmp_4
-assign, _2_tmp_5, 0.009000
-assign, _2_Crr1, _2_tmp_5
-assign, _2_tmp_6, 0.001000
-assign, _2_Crr2, _2_tmp_6
-assign, _2_tmp_7, 1.225000
-assign, _2_rho, _2_tmp_7
-assign, _2_tmp_8, 0.200000
-assign, _2_CDa, _2_tmp_8
-assign, _2_tmp_9, 0.280000
-assign, _2_radius, _2_tmp_9
-assign, _2_tmp_10, 0.050000
-assign, _2_R_line, _2_tmp_10
-assign, _2_tmp_11, 0.160000
-assign, _2_R_batt, _2_tmp_11
-assign, _2_tmp_12, 1000.000000
-assign, _2_x_i, _2_tmp_12
-assign, _2_tmp_13, 10.000000
-assign, _2_v_i, _2_tmp_13
-assign, _2_tmp_14, 1025.000000
-assign, _2_x_f, _2_tmp_14
-assign, _2_tmp_15, 2.100000
-assign, _2_dt, _2_tmp_15
-assign, _2_tmp_16, 11.600000
-assign, _2_Iphase, _2_tmp_16
-assign, _2_tmp_17, 900.000000
-assign, _2_bus_power, _2_tmp_17
-assign, _2_tmp_18, 140.250000
-assign, _2_bus_voltage, _2_tmp_18
-assign, _2_tmp_19, 1.000000
-assign, _2_component_efficiency, _2_tmp_19
-assign, _2_tmp_20, 0.000000
-assign, _2_wire_loss, _2_tmp_20
-assign, _2_tmp_21, 0
-assign, _2_it, _2_tmp_21", shape = "rect"]
+main_1 [label = "assign, _2_a, 0
+assign, _2_i, 0
+assign, _2_b, 1
+add, _2_a, _2_b, _2_tmp_0
+assign, _2_a, _2_tmp_0
+add, _2_a, _2_b, _2_tmp_1
+assign, _2_a, _2_tmp_1
+add, _2_a, _2_b, _2_tmp_2
+assign, _2_a, _2_tmp_2", shape = "rect"]
 main_1 -> {main_2}
 
-main_2 [label = "_for_1:
-brgt, _2_it, _2_n_iterations, _after_for_2", shape = "rect"]
-main_2 -> {main_21, main_3}
+main_2 [label = "_while_1:
+assign, _2_tmp_3, 10
+assign, _2_tmp_4, 1
+brlt, _2_i, _2_tmp_3, _cmp_op_3", shape = "rect"]
+main_2 -> {main_4; main_3}
 
-main_3 [label = "sub, _2_x_f, _2_x_i, _2_tmp_22
-div, _2_tmp_22, _2_dt, _2_tmp_23
-assign, _2_dx_dt, _2_tmp_23
-sub, _2_dx_dt, _2_v_i, _2_tmp_24
-div, _2_tmp_24, _2_dt, _2_tmp_25
-assign, _2_dv_dt, _2_tmp_25
-mult, _2_M, _2_G, _2_tmp_26
-mult, _2_Crr2, _2_dx_dt, _2_tmp_27
-add, _2_Crr1, _2_tmp_27, _2_tmp_28
-mult, _2_tmp_26, _2_tmp_28, _2_tmp_29
-assign, _2_friction, _2_tmp_29
-assign, _2_tmp_30, 0.500000
-mult, _2_tmp_30, _2_rho, _2_tmp_31
-mult, _2_tmp_31, _2_CDa, _2_tmp_32
-assign, _2_tmp_33, 2
-assign, _2_tmp_35, 0
-assign, _2_tmp_34, 1", shape = "rect"]
+main_3 [label = "assign, _2_tmp_4, 0", shape = "rect"]
 main_3 -> {main_4}
 
-main_4 [label = "_pow_3:
-brgeq, _2_tmp_35, _2_tmp_33, _after_pow_4", shape = "rect"]
-main_4 -> {main_6, main_5}
+main_4 [label = "_cmp_op_3:
+breq, _2_tmp_4, 0, _after_while_2", shape = "rect"]
+main_4 -> {main_11; main_5}
 
-main_5 [label = "mult, _2_tmp_34, _2_dx_dt, _2_tmp_34
-add, _2_tmp_35, 1, _2_tmp_35
-goto, _pow_3", shape = "rect"]
-main_5 -> {main_4}
+main_5 [label = "add, _2_a, _2_b, _2_tmp_5
+assign, _2_a, _2_tmp_5
+add, _2_a, _2_b, _2_tmp_6
+assign, _2_a, _2_tmp_6
+add, _2_a, _2_b, _2_tmp_7
+assign, _2_a, _2_tmp_7
+assign, _2_tmp_8, 5
+assign, _2_tmp_9, 1
+brlt, _2_i, _2_tmp_8, _cmp_op_4", shape = "rect"]
+main_5 -> {main_7; main_6}
 
-main_6 [label = "_after_pow_4:
-mult, _2_tmp_32, _2_tmp_34, _2_tmp_36
-assign, _2_drag, _2_tmp_36
-add, _2_drag, _2_friction, _2_tmp_37
-mult, _2_M, _2_dv_dt, _2_tmp_38
-add, _2_tmp_37, _2_tmp_38, _2_tmp_39
-assign, _2_motor_force, _2_tmp_39
-mult, _2_motor_force, _2_radius, _2_tmp_40
-assign, _2_torque, _2_tmp_40
-breq, _2_calculate_efficiency, 0, _if_false_do_this_5", shape = "rect"]
-main_6 -> {main_17, main_7}
+main_6 [label = "assign, _2_tmp_9, 0", shape = "rect"]
+main_6 -> {main_7}
 
-main_7 [label = "assign, _2_tmp_41, 0.011000
-assign, _2_tmp_42, 2
-assign, _2_tmp_44, 0
-assign, _2_tmp_43, 1", shape = "rect"]
-main_7 -> {main_8}
+main_7 [label = "_cmp_op_4:
+breq, _2_tmp_9, 0, _if_false_do_this_6", shape = "rect"]
+main_7 -> {main_9; main_8}
 
-main_8 [label = "_pow_6:
-brgeq, _2_tmp_44, _2_tmp_42, _after_pow_7", shape = "rect"]
-main_8 -> {main_10, main_9}
+main_8 [label = "add, _2_a, _2_b, _2_tmp_10
+assign, _2_a, _2_tmp_10
+add, _2_a, _2_b, _2_tmp_11
+assign, _2_a, _2_tmp_11
+add, _2_a, _2_b, _2_tmp_12
+assign, _2_a, _2_tmp_12
+goto, _after_if_do_this_5", shape = "rect"]
+main_8 -> {main_10}
 
-main_9 [label = "mult, _2_tmp_43, _2_Iphase, _2_tmp_43
-add, _2_tmp_44, 1, _2_tmp_44
-goto, _pow_6", shape = "rect"]
-main_9 -> {main_8}
+main_9 [label = "_if_false_do_this_6:
+sub, _2_a, _2_b, _2_tmp_13
+assign, _2_a, _2_tmp_13
+sub, _2_a, _2_b, _2_tmp_14
+assign, _2_a, _2_tmp_14
+sub, _2_a, _2_b, _2_tmp_15
+assign, _2_a, _2_tmp_15", shape = "rect"]
+main_9 -> {main_10}
 
-main_10 [label = "_after_pow_7:
-mult, _2_tmp_41, _2_tmp_43, _2_tmp_45
-assign, _2_tmp_46, 0.003300
-mult, _2_tmp_46, _2_Iphase, _2_tmp_47
-add, _2_tmp_45, _2_tmp_47, _2_tmp_48
-assign, _2_tmp_49, 0.020000
-add, _2_tmp_48, _2_tmp_49, _2_tmp_50
-assign, _2_mc_power_loss, _2_tmp_50
-assign, _2_tmp_51, 1.000000
-div, _2_mc_power_loss, _2_bus_power, _2_tmp_52
-sub, _2_tmp_51, _2_tmp_52, _2_tmp_53
-assign, _2_mc_efficiency, _2_tmp_53
-assign, _2_tmp_54, 7.600000
-assign, _2_tmp_55, 79.000000
-sub, _2_bus_voltage, _2_tmp_55, _2_tmp_56
-mult, _2_tmp_54, _2_tmp_56, _2_tmp_57
-assign, _2_tmp_58, 600.000000
-add, _2_tmp_57, _2_tmp_58, _2_tmp_59
-assign, _2_rpm_max, _2_tmp_59
-assign, _2_tmp_60, 0.180000
-mult, _2_tmp_60, _2_torque, _2_tmp_61
-add, _2_rpm_max, _2_tmp_61, _2_tmp_62
-div, _2_rpm_max, _2_tmp_62, _2_tmp_63
-assign, _2_motor_efficiency, _2_tmp_63
-div, _2_bus_power, _2_bus_voltage, _2_tmp_64
-assign, _2_bus_current, _2_tmp_64
-assign, _2_tmp_65, 2
-assign, _2_tmp_67, 0
-assign, _2_tmp_66, 1", shape = "rect"]
-main_10 -> {main_11}
+main_10 [label = "_after_if_do_this_5:
+add, _2_a, _2_b, _2_tmp_16
+assign, _2_a, _2_tmp_16
+add, _2_a, _2_b, _2_tmp_17
+assign, _2_a, _2_tmp_17
+add, _2_a, _2_b, _2_tmp_18
+assign, _2_a, _2_tmp_18
+assign, _2_tmp_19, 1
+add, _2_i, _2_tmp_19, _2_tmp_20
+assign, _2_i, _2_tmp_20
+goto, _while_1", shape = "rect"]
+main_10 -> {main_2}
 
-main_11 [label = "_pow_8:
-brgeq, _2_tmp_67, _2_tmp_65, _after_pow_9", shape = "rect"]
-main_11 -> {main_13, main_12}
+main_11 [label = "_after_while_2:
+call, printi, _2_a
+assign, _1_tmp_21, 0
+return, _1_tmp_21", shape = "rect"]
+main_11 -> {}
 
-main_12 [label = "mult, _2_tmp_66, _2_bus_current, _2_tmp_66
-add, _2_tmp_67, 1, _2_tmp_67
-goto, _pow_8", shape = "rect"]
-main_12 -> {main_11}
-
-main_13 [label = "_after_pow_9:
-mult, _2_R_batt, _2_tmp_66, _2_tmp_68
-assign, _2_batt_dissipated, _2_tmp_68
-assign, _2_tmp_69, 1.000000
-assign, _2_tmp_70, 1.000000
-div, _2_batt_dissipated, _2_bus_power, _2_tmp_71
-add, _2_tmp_70, _2_tmp_71, _2_tmp_72
-div, _2_tmp_69, _2_tmp_72, _2_tmp_73
-assign, _2_batt_efficiency, _2_tmp_73
-mult, _2_mc_efficiency, _2_motor_efficiency, _2_tmp_74
-mult, _2_tmp_74, _2_batt_efficiency, _2_tmp_75
-assign, _2_component_efficiency, _2_tmp_75
-assign, _2_tmp_76, 3.000000
-mult, _2_tmp_76, _2_R_line, _2_tmp_77
-assign, _2_tmp_78, 2
-assign, _2_tmp_80, 0
-assign, _2_tmp_79, 1", shape = "rect"]
-main_13 -> {main_14}
-
-main_14 [label = "_pow_10:
-brgeq, _2_tmp_80, _2_tmp_78, _after_pow_11", shape = "rect"]
-main_14 -> {main_16, main_15}
-
-main_15 [label = "mult, _2_tmp_79, _2_Iphase, _2_tmp_79
-add, _2_tmp_80, 1, _2_tmp_80
-goto, _pow_10", shape = "rect"]
-main_15 -> {main_14}
-
-main_16 [label = "_after_pow_11:
-mult, _2_tmp_77, _2_tmp_79, _2_tmp_81
-assign, _2_wire_loss, _2_tmp_81", shape = "rect"]
-main_16 -> {main_17}
-
-main_17 [label = "_if_false_do_this_5:
-breq, _2_print_power, 0, _if_false_do_this_13", shape = "rect"]
-main_17 -> {main_19, main_18}
-
-main_18 [label = "mult, _2_torque, _2_dx_dt, _2_tmp_82
-div, _2_tmp_82, _2_radius, _2_tmp_83
-assign, _2_nominal_power, _2_tmp_83
-mult, _2_nominal_power, _2_component_efficiency, _2_tmp_84
-add, _2_tmp_84, _2_wire_loss, _2_tmp_85
-assign, _2_power, _2_tmp_85
-call, printf, _2_power
-goto, _after_if_do_this_12", shape = "rect"]
-main_18 -> {main_20}
-
-main_19 [label = "_if_false_do_this_13:
-call, printf, _2_torque", shape = "rect"]
-main_19 -> {main_20}
-
-main_20 [label = "_after_if_do_this_12:
-assign, _2_tmp_86, 1.000000
-sub, _2_bus_voltage, _2_tmp_86, _2_tmp_87
-assign, _2_bus_voltage, _2_tmp_87
-add, _2_it, 1, _2_it
-goto, _for_1", shape = "rect"]
-main_20 -> {main_2}
-
-main_21 [label = "_after_for_2:
-assign, _1_tmp_88, 0
-return, _1_tmp_88", shape = "rect"]
-main_21 -> {}
-
-main_22 [label = "return", shape = "rect"]
-main_22 -> {}
+main_12 [label = "return", shape = "rect"]
+main_12 -> {}
 }
