@@ -3,6 +3,7 @@ package com.tiger.backend.allocationalgorithm;
 import com.tiger.backend.BackendVariable;
 import com.tiger.io.CancellableWriter;
 import com.tiger.ir.interfaces.FunctionIR;
+import com.tiger.ir.interfaces.IRInstruction;
 import com.tiger.ir.interfaces.IRentry;
 
 import java.util.ArrayList;
@@ -96,6 +97,10 @@ public class LivenessAnalysis {
                     HashSet<String> liveout = block.liveOut.get(i);
                     uses[idx] |= livein.contains(localVariable.name);
                     uses[idx] |= liveout.contains(localVariable.name);
+                    if(block.entries.get(i).isInstruction()) {
+                        IRInstruction irInstruction = block.entries.get(i).asInstruction();
+                        uses[idx] |= irInstruction.writes().contains(localVariable.name);
+                    }
                 }
             }
             localVariable.setLivenessBooleans(uses);
