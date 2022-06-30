@@ -86,14 +86,16 @@ public class BriggsAllocator {
             int top = coloringStack.pop();
             List<Integer> neighborColors = G[top].neighbours.stream().filter(i -> !removed[i]).map(i -> colors[i]).filter(c -> c!=-1).sorted().toList();
             int chosenColor = -1;
-            for (int i = 0; i < neighborColors.size(); i++) {
-                if(neighborColors.get(i) != i){
-                    chosenColor = i;
+            int cur = 0;
+            for (Integer neighborColor : neighborColors) {
+                if (neighborColor == cur) {
+                    cur += 1;
                 }
             }
-            if(chosenColor == -1 && neighborColors.size() != n){
-                chosenColor = neighborColors.size();
+            if(cur < numColors){
+                chosenColor = cur;
             }
+            assert chosenColor < numColors;
             colors[top] = chosenColor;
             removed[top] = false;
         }
@@ -116,14 +118,14 @@ public class BriggsAllocator {
         );
     }
 
-    private static void assignRegistersToSingleTypeOfVars(String[] intSaves, List<BackendVariable> intVars) {
-        Node[] nodes = convertBackendsToNodes(intVars);
-        int[] colors = doBriggsAlgorithm(nodes, intSaves.length);
-        for (int i = 0; i < intVars.size(); i++) {
+    private static void assignRegistersToSingleTypeOfVars(String[] registers, List<BackendVariable> variables) {
+        Node[] nodes = convertBackendsToNodes(variables);
+        int[] colors = doBriggsAlgorithm(nodes, registers.length);
+        for (int i = 0; i < variables.size(); i++) {
             if(colors[i] == -1){
-                intVars.get(i).spill();
+                variables.get(i).spill();
             } else {
-                intVars.get(i).assignRegister(intSaves[colors[i]]);
+                variables.get(i).assignRegister(registers[colors[i]]);
             }
         }
     }
