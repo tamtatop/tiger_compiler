@@ -32,6 +32,8 @@ class TigerArgs {
             switch (arg) {
                 case "-i" ->  // input file
                         inputFilename = args[i++];
+                case "-r" ->  // ir input file. we don't need it bitches
+                        i++;
                 case "-l" ->  // lexer output
                         lexerOut = true;
                 case "-p" ->  // parse tree output
