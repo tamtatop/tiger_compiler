@@ -1,11 +1,9 @@
 package com.tiger.backend.allocationalgorithm;
 
 import com.tiger.backend.BackendVariable;
-import com.tiger.io.CancellableWriter;
+import com.tiger.backend.SaveRegisterAllocator;
 import com.tiger.ir.interfaces.*;
-import org.w3c.dom.ls.LSOutput;
 
-import java.io.Writer;
 import java.util.*;
 
 class VarUsage implements Comparable<VarUsage> {
