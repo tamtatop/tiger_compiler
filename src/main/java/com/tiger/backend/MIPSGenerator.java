@@ -13,8 +13,8 @@ import java.util.Objects;
 
 import static com.tiger.backend.BackendVariable.WORD_SIZE;
 import static com.tiger.backend.allocationalgorithm.LivenessAnalysis.performLivenessAnalysis;
-import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.FLOAT_SAVES;
-import static com.tiger.backend.allocationalgorithm.SaveRegisterAllocator.INT_SAVES;
+import static com.tiger.backend.SaveRegisterAllocator.FLOAT_SAVES;
+import static com.tiger.backend.SaveRegisterAllocator.INT_SAVES;
 
 // for a := arr[i] or arr[i] := a
 class ArrStoreLoadData {
@@ -330,32 +330,40 @@ public class MIPSGenerator {
         List<IRBlock> blocks = IntraBlockAllocator.findBlocks(functionIR);
         CfgGraphVizGenerator.generateCfgFunctionBlocks(cfgWriter, blocks);
         performLivenessAnalysis(functionIR, blocks, livenessWriter);
-//
-//        generateFunctionHeader(functionIR);
-//        saveOldFramePointer();
-//
-//        int spOffset = 0;
-//        spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
-//
-//        // space for saved regs
-//        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
-//        int saveRegOffset = -spOffset;
-//
-//        // space for saved $ra
-//        spOffset += WORD_SIZE;
-//
-//        // allocate stack frame
-//        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
-//
-//        // actually save regs and ra
-//        handleSaveRegData(saveRegOffset, "sw", "s.s");
-//        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
-//
-//        // ARGUMENT HANDLING:
-//        copyArgumentValues(functionIR);
-//
-//        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, saveRegOffset);
+        SpillCostCalculator.calculateVariableSpillCosts(functionIR);
+        BriggsAllocator.assignRegisters(functionIR, blocks, INT_SAVES, FLOAT_SAVES);
+        assert functionIR.getLocalVariables().stream().allMatch(b -> b.allocated);
+//        System.out.printf("Running briggs for %s\n", functionIR.getFunctionName());
+//        for (BackendVariable localVariable : functionIR.getLocalVariables()) {
+//            System.out.printf("allocated %s for %s\n", localVariable.register, localVariable.name);
+//        }
+
+        generateFunctionHeader(functionIR);
+        saveOldFramePointer();
+
+        int spOffset = 0;
+        spOffset = assignOffsetsToSpilledLocals(functionIR, spOffset);
+
+        // space for saved regs
+        spOffset += INT_SAVES.length * WORD_SIZE + FLOAT_SAVES.length * WORD_SIZE;
+        int saveRegOffset = -spOffset;
+
+        // space for saved $ra
+        spOffset += WORD_SIZE;
+
+        // allocate stack frame
+        writer.write(String.format("addiu $sp, $sp, -%d\n", spOffset));
+
+        // actually save regs and ra
+        handleSaveRegData(saveRegOffset, "sw", "s.s");
+        writer.write(String.format("sw $ra, %d($fp)\n", -spOffset));
+
+        // ARGUMENT HANDLING:
+        copyArgumentValues(functionIR);
+
+        translateInstructions(functionIR, programIR, functionIR.getBody(), spOffset, saveRegOffset);
     }
+
 
     public void translateFunction(FunctionIR functionIR, ProgramIR programIR, RegisterAllocationAlgorithm algorithm) {
         // ======================== STACK LAYOUT ====================================================

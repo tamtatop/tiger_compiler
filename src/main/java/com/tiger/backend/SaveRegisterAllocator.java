@@ -1,4 +1,4 @@
-package com.tiger.backend.allocationalgorithm;
+package com.tiger.backend;
 
 import com.tiger.types.BaseType;
 
