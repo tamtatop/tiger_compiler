@@ -22,6 +22,7 @@ public class BackendVariable {
     public boolean isSpilled;
     public boolean allocated;
     public int stackOffset;
+    public int spillCost;
     private boolean[] livenessUses = null;
 
     public BackendVariable(NakedVariable nakedBase, boolean isStatic) {
