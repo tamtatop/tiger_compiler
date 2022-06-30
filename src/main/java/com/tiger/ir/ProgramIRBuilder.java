@@ -115,12 +115,18 @@ public class ProgramIRBuilder implements IrGeneratorListener {
     }
 
     private static class Instruction implements IRInstruction, IRentry {
+        private final int loopDepth;
         String op;
         List<String> args;
 
-        public Instruction(String op, List<String> args) {
+        public Instruction(String op, List<String> args, int loopDepth) {
             this.op = op;
             this.args = args.stream().filter(p -> !p.equals("")).toList();
+            this.loopDepth = loopDepth;
+        }
+
+        public int getLoopDepth() {
+            return loopDepth;
         }
 
         @Override
@@ -312,19 +318,27 @@ public class ProgramIRBuilder implements IrGeneratorListener {
     public void genFunction(String functionName, List<NakedVariable> localVariables, List<NakedVariable> arguments, String irBody, BaseType returnType) {
 
         ArrayList<IRentry> entries = new ArrayList<>();
-        irBody.lines().forEach(line -> {
+        int loopDepth = 0;
+        for (String line : irBody.lines().toList()) {
             line = line.trim();
             if (line.length() == 0) return;
             if (!line.contains(":")) {
                 int opEndIdx = line.indexOf(",");
                 String op = line.substring(0, opEndIdx).trim();
                 List<String> args = Arrays.stream(line.trim().split(",")).map(String::trim).toList();
-                entries.add(new Instruction(op, args));
+                entries.add(new Instruction(op, args, loopDepth));
             } else {
                 String label = line.substring(0, line.length() - 1);
-                entries.add(new Label(label));
+                if(label.equals("INCLOOP")){
+                    loopDepth+=1;
+                } else if(label.equals("DECLOOP")){
+                    loopDepth-=1;
+                } else {
+                    entries.add(new Label(label));
+                }
+
             }
-        });
+        }
         List<BackendVariable> lvars = localVariables.stream().map(v -> new BackendVariable(v, false)).toList();
         List<BackendVariable> args = arguments.stream().map(v -> new BackendVariable(v, false)).toList();
         this.program.functions.put(functionName, new Function(functionName, lvars, args, entries, this.program, returnType));

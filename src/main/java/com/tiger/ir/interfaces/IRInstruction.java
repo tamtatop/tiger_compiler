@@ -7,6 +7,8 @@ public interface IRInstruction {
 
     List<String> writes();
 
+    int getLoopDepth();
+
     int size();
 
     String getIthCode(int i);

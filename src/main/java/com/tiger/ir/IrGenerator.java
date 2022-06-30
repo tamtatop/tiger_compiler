@@ -28,6 +28,18 @@ public class IrGenerator {
 
     private int labelCounter;
 
+    private static final boolean loopTracking = true;
+    public void increaseLoopDepth() {
+        if(loopTracking) {
+            funcIr.write("INCLOOP:\n");
+        }
+    }
+    public void decreaseLoopDepth() {
+        if(loopTracking) {
+            funcIr.write("DECLOOP:\n");
+        }
+    }
+
     public IrGenerator(CancellableWriter writer, IrGeneratorListener listener) {
         this.writer = writer;
         this.listener = listener;

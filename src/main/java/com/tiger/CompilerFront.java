@@ -286,6 +286,7 @@ public class CompilerFront {
 
         // stat: WHILE expr DO stat_seq ENDDO SEMICOLON
         if (ctx.WHILE() != null) {
+            ir.increaseLoopDepth();
             String whileLabel = ir.newUniqueLabel("while");
             String afterWhile = ir.newUniqueLabel("after_while");
             String prevLoopLabel = afterCurLoopLabel;
@@ -310,11 +311,12 @@ public class CompilerFront {
             // stat_seq code
             // goto while
             // after_while:
-
+            ir.decreaseLoopDepth();
             afterCurLoopLabel = prevLoopLabel;
         }
         // stat: FOR ID ASSIGN expr TO expr DO stat_seq ENDDO SEMICOLON
         if (ctx.FOR() != null) {
+            ir.increaseLoopDepth();
             String forLabel = ir.newUniqueLabel("for");
             String afterFor = ir.newUniqueLabel("after_for");
             String prevLoopLabel = afterCurLoopLabel;
@@ -353,7 +355,7 @@ public class CompilerFront {
             // add, i, 1, i
             // goto for
             // after_for
-
+            ir.decreaseLoopDepth();
             afterCurLoopLabel = prevLoopLabel;
         }
 
