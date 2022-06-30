@@ -102,9 +102,11 @@ public class Main {
         livenessWriter.commit();
         mipsWriter.commit();
 
-        Path copied = Paths.get(tigerArgs.mipsDefaultFilename);
-        Path originalPath = Paths.get(tigerArgs.mipsFilename);
-        Files.copy(originalPath, copied, StandardCopyOption.REPLACE_EXISTING);
+        if(tigerArgs.mipsDefaultFilename != null) {
+            Path copied = Paths.get(tigerArgs.mipsDefaultFilename);
+            Path originalPath = Paths.get(tigerArgs.mipsFilename);
+            Files.copy(originalPath, copied, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
 
