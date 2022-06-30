@@ -88,6 +88,9 @@ public class IntraBlockAllocator {
                         && body.get(i - 1).asInstruction().getType() != IRInstructionType.GOTO) {
                     blocks.get(blockId[i - 1]).neighbours
                             .add(blocks.get(blockId[i]));
+                } else if(body.get(i-1).isLabel()) {
+                    blocks.get(blockId[i - 1]).neighbours
+                            .add(blocks.get(blockId[i]));
                 }
             }
         }
@@ -103,8 +106,8 @@ public class IntraBlockAllocator {
         for (IRentry entry : blockEntries) {
             if (entry.isInstruction()) {
                 IRInstruction instr = entry.asInstruction();
-                fillVarUsageFrequencies(varUsageFrequencies, instr.reads());
-                fillVarUsageFrequencies(varUsageFrequencies, instr.writes());
+                fillVarUsageFrequencies(varUsageFrequencies, instr.reads().stream().filter(s -> !function.fetchVariableByName(s).isStatic).toList());
+                fillVarUsageFrequencies(varUsageFrequencies, instr.writes().stream().filter(s -> !function.fetchVariableByName(s).isStatic).toList());
             }
         }
 

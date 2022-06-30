@@ -42,8 +42,8 @@ public class LivenessAnalysis {
                     List<String> uevar;
                     List<String> varkill;
                     if (instruction.isInstruction()) {
-                        uevar = instruction.asInstruction().reads();
-                        varkill = instruction.asInstruction().writes();
+                        uevar = instruction.asInstruction().reads().stream().filter(s -> !functionIR.fetchVariableByName(s).isStatic).toList();
+                        varkill = instruction.asInstruction().writes().stream().filter(s -> !functionIR.fetchVariableByName(s).isStatic).toList();
                     } else {
                         uevar = new ArrayList<>();
                         varkill = new ArrayList<>();

@@ -13,6 +13,7 @@ public class SpillCostCalculator {
         for (IRentry iRentry : functionIR.getBody()) {
             if (iRentry.isInstruction()) {
                 IRInstruction irInstruction = iRentry.asInstruction();
+                // TODO: fix for statics but we don't really care
                 for (String readVar : irInstruction.reads()) {
                     functionIR.fetchVariableByName(readVar).spillCost += readCost * Math.pow(loopMultiplier, irInstruction.getLoopDepth());
                 }
