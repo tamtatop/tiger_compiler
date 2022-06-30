@@ -634,12 +634,12 @@ public class MIPSGenerator {
 
     private void handleSaveRegData(int saveRegOffset, String intCommand, String floatCommand) {
         for (String saveReg : INT_SAVES) {
-            saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", intCommand, saveReg, saveRegOffset));
+            saveRegOffset += WORD_SIZE;
         }
         for (String saveReg : FLOAT_SAVES) {
-            saveRegOffset += WORD_SIZE;
             writer.write(String.format("%s %s, %d($fp)\n", floatCommand, saveReg, saveRegOffset));
+            saveRegOffset += WORD_SIZE;
         }
     }
 
